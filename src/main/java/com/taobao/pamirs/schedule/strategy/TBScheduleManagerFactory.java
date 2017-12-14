@@ -137,8 +137,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      * @return
      * @throws Exception
      */
-    public IStrategyTask createStrategyTask(ScheduleStrategy strategy)
-            throws Exception {
+    public IStrategyTask createStrategyTask(ScheduleStrategy strategy)   throws Exception {
         IStrategyTask result = null;
         try {
             if (Kind.Schedule == strategy.getKind()) {
@@ -287,10 +286,13 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             }
             //不足，增加调度器
             ScheduleStrategy strategy = this.scheduleStrategyManager.loadStrategy(run.getStrategyName());
+
+            // requestNumr=0(Leader尚未给其分配任务项 或 Leader 分配时发现不需要这台机器来处理)时,下面where直接结束,等待下一个2秒 再次factory.refresh()
+            // requestNumr=1(Leader 分配了1个任务项给这台机器来处理)时,将执行 this.createStrategyTask(strategy);
             while (list.size() < run.getRequestNum()) {
                 IStrategyTask result = this.createStrategyTask(strategy);
                 if (null == result) {
-                    logger.error("strategy 对应的配置有问题。strategy name=" + strategy.getStrategyName());
+                    logger.error("strategy对应的配置有问题。strategy name=" + strategy.getStrategyName());
                 }
                 list.add(result);
             }

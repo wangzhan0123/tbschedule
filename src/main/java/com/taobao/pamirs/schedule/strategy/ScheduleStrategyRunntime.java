@@ -17,7 +17,7 @@ public class ScheduleStrategyRunntime {
     private String taskParameter;
 
     //TODO:建议更名为 taskItemNum
-    /** 参与执行的任务项数量  */
+    /** uuid机器参与执行strategyName任务 被分配的任务项数量  */
     int requestNum;
 
     /** 当前的任务数量 */
