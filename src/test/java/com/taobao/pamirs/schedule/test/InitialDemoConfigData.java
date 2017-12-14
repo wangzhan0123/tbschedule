@@ -1,5 +1,6 @@
 package com.taobao.pamirs.schedule.test;
 
+import com.taobao.pamirs.schedule.strategy.Kind;
 import com.taobao.pamirs.schedule.strategy.ScheduleStrategy;
 import com.taobao.pamirs.schedule.strategy.TBScheduleManagerFactory;
 import com.taobao.pamirs.schedule.taskmanager.ScheduleTaskType;
@@ -62,7 +63,7 @@ public class InitialDemoConfigData extends UnitilsJUnit4 {
         }
         ScheduleStrategy strategy = new ScheduleStrategy();
         strategy.setStrategyName(strategyName);
-        strategy.setKind(ScheduleStrategy.Kind.Schedule);
+        strategy.setKind(Kind.Schedule);
         strategy.setTaskName(taskName);
         strategy.setTaskParameter("中国");
 

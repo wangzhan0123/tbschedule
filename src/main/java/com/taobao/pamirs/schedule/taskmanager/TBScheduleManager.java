@@ -130,9 +130,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         scheduleCenter.registerScheduleServer(this.currenScheduleServer);
         this.mBeanName = "pamirs:name=" + "schedule.ServerMananger." + this.currenScheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.currenScheduleServer.getTaskType() + "-" + this.currentSerialNumber + "-HeartBeat");
-        this.heartBeatTimer.schedule(new HeartBeatTimerTask(this),
-                new Date(System.currentTimeMillis() + 500),
-                this.taskTypeInfo.getHeartBeatRate());
+        this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
     }
 
@@ -376,9 +374,7 @@ abstract class TBScheduleManager implements IStrategyTask {
             // 取消心跳TIMER
             this.heartBeatTimer.cancel();
             // 从配置中心注销自己
-            this.scheduleCenter.unRegisterScheduleServer(
-                    this.currenScheduleServer.getTaskType(),
-                    this.currenScheduleServer.getUuid());
+            this.scheduleCenter.unRegisterScheduleServer(this.currenScheduleServer.getTaskType(),this.currenScheduleServer.getUuid());
         } finally {
             registerLock.unlock();
         }

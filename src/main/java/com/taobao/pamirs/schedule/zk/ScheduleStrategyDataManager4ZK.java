@@ -17,7 +17,7 @@ public class ScheduleStrategyDataManager4ZK {
 
     private ZKManager zkManager;
     private String PATH_Strategy;
-    private String PATH_ManagerFactory;
+    private String PATH_Factory;
     private Gson gson;
 
     //在Spring对象创建完毕后，创建内部对象
@@ -25,18 +25,37 @@ public class ScheduleStrategyDataManager4ZK {
         this.zkManager = aZkManager;
         gson = new GsonBuilder().registerTypeAdapter(Timestamp.class, new TimestampTypeAdapter()).setDateFormat("yyyy-MM-dd HH:mm:ss").create();
         this.PATH_Strategy = this.zkManager.getRootPath() + "/strategy";
-        this.PATH_ManagerFactory = this.zkManager.getRootPath() + "/factory";
+        this.PATH_Factory = this.zkManager.getRootPath() + "/factory";
 
         if (this.getZooKeeper().exists(this.PATH_Strategy, false) == null) {
             ZKTools.createPath(getZooKeeper(), this.PATH_Strategy, CreateMode.PERSISTENT, this.zkManager.getAcl());
         }
-        if (this.getZooKeeper().exists(this.PATH_ManagerFactory, false) == null) {
-            ZKTools.createPath(getZooKeeper(), this.PATH_ManagerFactory, CreateMode.PERSISTENT, this.zkManager.getAcl());
+        if (this.getZooKeeper().exists(this.PATH_Factory, false) == null) {
+            ZKTools.createPath(getZooKeeper(), this.PATH_Factory, CreateMode.PERSISTENT, this.zkManager.getAcl());
         }
     }
 
-    public ScheduleStrategy loadStrategy(String strategyName)
-            throws Exception {
+    /**
+     * 获得指定任务的概要配置信息,数据格式示例：
+     * {
+     *     "strategyName":"scanPushTaskSchedule_STRATEGY",
+     *     "IPList":
+     *     [
+     *         "127.0.0.1"
+     *     ],
+     *     "numOfSingleServer":0,
+     *     "assignNum":8,
+     *     "kind":"Schedule",
+     *     "taskName":"scanPushTaskSchedule_TASK",
+     *     "taskParameter":"",
+     *     "sts":"resume"
+     * }
+     *
+     * @param strategyName
+     * @return
+     * @throws Exception
+     */
+    public ScheduleStrategy loadStrategy(String strategyName) throws Exception {
         String zkPath = this.PATH_Strategy + "/" + strategyName;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             return null;
@@ -121,20 +140,20 @@ public class ScheduleStrategyDataManager4ZK {
      * <p>当前应用所有的服务器X1...Xn都会创建一个临时自增节点 $rootPath/$factory/$uuid CreateMode.EPHEMERAL_SEQUENTIAL </p>
      * <p>基于任务的概要配置参数IPList，比如["127.0.0.1"]或者["192.168.195.101，192.168.195.202"],判断服务器X1...Xn当中具体会有哪几个参与到这个任务当中  </p>
      * @param managerFactory
-     * @return 需要全部注销的调度，例如当IP不在列表中
+     * @return 需要全部注销的任务名称集合，例如不满足IPList规则的
      * @throws Exception
      */
     public List<String> registerManagerFactory(TBScheduleManagerFactory managerFactory) throws Exception {
 
         if (managerFactory.getUuid() == null) {
             String uuid = managerFactory.getIp() + "$" + managerFactory.getHostName() + "$" + UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
-            String zkPath = this.PATH_ManagerFactory + "/" + uuid + "$";
+            String zkPath = this.PATH_Factory + "/" + uuid + "$";
             zkPath = this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.EPHEMERAL_SEQUENTIAL);
             //下面这一步不能忽略，最终managerFactory赋值后的uuid，是在zk服务器上创建的临时节点名称，示例：uuid="10.187.133.52$host-10-187-133-52$786D516F7FA84FB6BF501B9B4FFF073D$0000000477"
             managerFactory.setUuid(zkPath.substring(zkPath.lastIndexOf("/") + 1));
         } else {
             //代码块能走到这里，表明uuid！=null,也就是表明uuid已经包含了自增序列了，所以接下来再次检测如果不存在时进行创建使用的是CreateMode.EPHEMERAL模式
-            String zkPath = this.PATH_ManagerFactory + "/" + managerFactory.getUuid();
+            String zkPath = this.PATH_Factory + "/" + managerFactory.getUuid();
             if (this.getZooKeeper().exists(zkPath, false) == null) {
                 zkPath = this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.EPHEMERAL);
             }
@@ -187,6 +206,14 @@ public class ScheduleStrategyDataManager4ZK {
         }
     }
 
+    /**
+     * 查看指定strategyName下的uuid机器的data数据，并封装成ScheduleStrategyRunntime类型
+     *
+     * @param strategyName
+     * @param uuid
+     * @return
+     * @throws Exception
+     */
     public ScheduleStrategyRunntime loadScheduleStrategyRunntime(String strategyName, String uuid) throws Exception {
         String zkPath = this.PATH_Strategy + "/" + strategyName + "/" + uuid;
         ScheduleStrategyRunntime result = null;
@@ -205,6 +232,7 @@ public class ScheduleStrategyDataManager4ZK {
                     throw new Exception("gson 反序列化异常,uuid为null");
                 }
             } else {
+                //这个节点如果是这次创建的，getData就会是null的
                 result = new ScheduleStrategyRunntime();
                 result.setStrategyName(strategyName);
                 result.setUuid(uuid);
@@ -231,20 +259,36 @@ public class ScheduleStrategyDataManager4ZK {
         return result;
     }
 
-    public List<ScheduleStrategyRunntime> loadAllScheduleStrategyRunntimeByUUID(String managerFactoryUUID) throws Exception {
+    /**
+     * 获得这个uuid所在机器能够参与的所有任务列表
+     *
+     * @param uuid
+     * @return
+     * @throws Exception
+     */
+    public List<ScheduleStrategyRunntime> loadAllScheduleStrategyRunntimeByUUID(String uuid) throws Exception {
         List<ScheduleStrategyRunntime> result = new ArrayList<ScheduleStrategyRunntime>();
-        String zkPath = this.PATH_Strategy;
 
-        List<String> taskTypeList = this.getZooKeeper().getChildren(zkPath, false);
-        Collections.sort(taskTypeList);
-        for (String taskType : taskTypeList) {
-            if (this.getZooKeeper().exists(zkPath + "/" + taskType + "/" + managerFactoryUUID, false) != null) {
-                result.add(loadScheduleStrategyRunntime(taskType, managerFactoryUUID));
+        String zkPath = this.PATH_Strategy;
+        List<String> strategyNameList = this.getZooKeeper().getChildren(zkPath, false);
+        Collections.sort(strategyNameList);
+
+        for (String strategyName : strategyNameList) {
+            if (this.getZooKeeper().exists(zkPath + "/" + strategyName + "/" + uuid, false) != null) {
+                ScheduleStrategyRunntime scheduleStrategyRunntime = loadScheduleStrategyRunntime(strategyName, uuid);
+                result.add(scheduleStrategyRunntime);
             }
         }
         return result;
     }
 
+    /**
+     * 获得指定strategyName下的所有机器列表的data数据，并且是排过序的，排序规则：按照uuid中的自增序列号进行升序排列
+     *
+     * @param strategyName
+     * @return
+     * @throws Exception
+     */
     public List<ScheduleStrategyRunntime> loadAllScheduleStrategyRunntimeByTaskType(String strategyName) throws Exception {
         List<ScheduleStrategyRunntime> result = new ArrayList<ScheduleStrategyRunntime>();
         String zkPath = this.PATH_Strategy;
@@ -254,9 +298,8 @@ public class ScheduleStrategyDataManager4ZK {
         List<String> uuidList = this.getZooKeeper().getChildren(zkPath + "/" + strategyName, false);
         //排序
         Collections.sort(uuidList, new Comparator<String>() {
-            public int compare(String u1, String u2) {
-                return u1.substring(u1.lastIndexOf("$") + 1).compareTo(
-                        u2.substring(u2.lastIndexOf("$") + 1));
+            public int compare(String uuid1, String uuid2) {
+                return uuid1.substring(uuid1.lastIndexOf("$") + 1).compareTo(uuid2.substring(uuid2.lastIndexOf("$") + 1));
             }
         });
 
@@ -268,26 +311,38 @@ public class ScheduleStrategyDataManager4ZK {
 
 
     /**
-     * 更新请求数量
+     * 指定strategyName任务下的uuid机器参与执行的任务项数量为taskItemNum
+     *
      * @param strategyName
-     * @param manangerFactoryUUID
-     * @param requestNum
+     * @param uuid
+     * @param taskItemNum
      * @throws Exception
      */
-    public void updateStrategyRunntimeReqestNum(String strategyName, String manangerFactoryUUID, int requestNum) throws Exception {
-        String zkPath = this.PATH_Strategy + "/" + strategyName + "/" + manangerFactoryUUID;
-        ScheduleStrategyRunntime result = null;
-        if (this.getZooKeeper().exists(zkPath, false) != null) {
-            result = this.loadScheduleStrategyRunntime(strategyName, manangerFactoryUUID);
-        } else {
+    public void updateStrategyRunntimeReqestNum(String strategyName, String uuid, int taskItemNum) throws Exception {
+        //ScheduleStrategyRunntime result = null;
+        //if (this.getZooKeeper().exists(zkPath, false) != null) {
+        //    result = this.loadScheduleStrategyRunntime(strategyName, uuid);
+        //} else {
+        //    result = new ScheduleStrategyRunntime();
+        //    result.setStrategyName(strategyName);
+        //    result.setUuid(uuid);
+        //    result.setRequestNum(taskItemNum);
+        //    result.setMessage("");
+        //}
+
+        ScheduleStrategyRunntime result = this.loadScheduleStrategyRunntime(strategyName, uuid);
+        if (result == null) {
             result = new ScheduleStrategyRunntime();
             result.setStrategyName(strategyName);
-            result.setUuid(manangerFactoryUUID);
-            result.setRequestNum(requestNum);
+            result.setUuid(uuid);
+            result.setRequestNum(taskItemNum);
             result.setMessage("");
         }
-        result.setRequestNum(requestNum);
+
+        result.setRequestNum(taskItemNum);
         String valueString = this.gson.toJson(result);
+
+        String zkPath = this.PATH_Strategy + "/" + strategyName + "/" + uuid;
         this.getZooKeeper().setData(zkPath, valueString.getBytes(), -1);
     }
 
@@ -315,15 +370,22 @@ public class ScheduleStrategyDataManager4ZK {
     }
 
     public void updateManagerFactoryInfo(String uuid, boolean isStart) throws Exception {
-        String zkPath = this.PATH_ManagerFactory + "/" + uuid;
+        String zkPath = this.PATH_Factory + "/" + uuid;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             throw new Exception("任务管理器不存在:" + uuid);
         }
         this.getZooKeeper().setData(zkPath, Boolean.toString(isStart).getBytes(), -1);
     }
 
+    /**
+     * 获取当前机器节点 /$rootPath/factory/$uuid data数据并组装成ManagerFactoryInfo类型
+     *
+     * @param uuid
+     * @return
+     * @throws Exception
+     */
     public ManagerFactoryInfo loadManagerFactoryInfo(String uuid) throws Exception {
-        String zkPath = this.PATH_ManagerFactory + "/" + uuid;
+        String zkPath = this.PATH_Factory + "/" + uuid;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             throw new Exception("任务管理器不存在:" + uuid);
         }
@@ -406,7 +468,7 @@ public class ScheduleStrategyDataManager4ZK {
     }
 
     public List<ManagerFactoryInfo> loadAllManagerFactoryInfo() throws Exception {
-        String zkPath = this.PATH_ManagerFactory;
+        String zkPath = this.PATH_Factory;
         List<ManagerFactoryInfo> result = new ArrayList<ManagerFactoryInfo>();
         List<String> names = this.getZooKeeper().getChildren(zkPath, false);
         Collections.sort(names, new Comparator<String>() {

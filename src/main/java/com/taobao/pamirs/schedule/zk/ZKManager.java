@@ -103,7 +103,7 @@ public class ZKManager {
     }
 
     public void close() throws InterruptedException {
-        log.info("关闭zookeeper连接");
+        log.info("准备关闭zookeeper连接");
         if (zk == null) {
             return;
         }

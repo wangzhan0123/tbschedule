@@ -48,7 +48,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     public volatile long timerTaskHeartBeatTS = System.currentTimeMillis();
 
     /**
-     * 调度配置中心客服端
+     * 调度配置中心客户端
      */
     private IScheduleDataManager scheduleTaskManager;
     private ScheduleStrategyDataManager4ZK scheduleStrategyManager;
@@ -141,14 +141,14 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             throws Exception {
         IStrategyTask result = null;
         try {
-            if (ScheduleStrategy.Kind.Schedule == strategy.getKind()) {
+            if (Kind.Schedule == strategy.getKind()) {
                 String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(strategy.getTaskName());
                 String ownSign = ScheduleUtil.splitOwnsignFromTaskType(strategy.getTaskName());
                 result = new TBScheduleManagerStatic(this, baseTaskType, ownSign, scheduleTaskManager);
-            } else if (ScheduleStrategy.Kind.Java == strategy.getKind()) {
+            } else if (Kind.Java == strategy.getKind()) {
                 result = (IStrategyTask) Class.forName(strategy.getTaskName()).newInstance();
                 result.initialTaskParameter(strategy.getStrategyName(), strategy.getTaskParameter());
-            } else if (ScheduleStrategy.Kind.Bean == strategy.getKind()) {
+            } else if (Kind.Bean == strategy.getKind()) {
                 result = (IStrategyTask) this.getBean(strategy.getTaskName());
                 result.initialTaskParameter(strategy.getStrategyName(), strategy.getTaskParameter());
             }
@@ -158,14 +158,20 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         return result;
     }
 
+    /**
+     * 每2秒检测1次机器是否存活(即是否与zk保持连接)，存活的话则调用 reRegisterManagerFactory()方法
+     *
+     * @throws Exception
+     */
     public void refresh() throws Exception {
         this.lock.lock();
         try {
             // 判断状态是否终止
-            ManagerFactoryInfo stsInfo = null;
+            ManagerFactoryInfo managerFactoryInfo = null;
             boolean isException = false;
             try {
-                stsInfo = this.getScheduleStrategyManager().loadManagerFactoryInfo(this.getUuid());
+                //managerFactoryInfo示例：{"uuid":"10.187.133.52$host-10-187-133-52$786D516F7FA84FB6BF501B9B4FFF073D$0000000477","start":true}
+                managerFactoryInfo = this.getScheduleStrategyManager().loadManagerFactoryInfo(this.getUuid());
             } catch (Exception e) {
                 isException = true;
                 logger.error("获取服务器信息有误：uuid=" + this.getUuid(), e);
@@ -177,10 +183,9 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                 } finally {
                     reRegisterManagerFactory();
                 }
-            } else if (stsInfo.isStart() == false) {
+            } else if (managerFactoryInfo.isStart() == false) {
                 stopServer(null); // 停止所有的调度任务
-                this.getScheduleStrategyManager().unRregisterManagerFactory(
-                        this);
+                this.getScheduleStrategyManager().unRregisterManagerFactory(this);
             } else {
                 reRegisterManagerFactory();
             }
@@ -189,10 +194,11 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         }
     }
 
+
     public void reRegisterManagerFactory() throws Exception {
         //重新分配调度器
-        List<String> stopList = this.getScheduleStrategyManager().registerManagerFactory(this);
-        for (String strategyName : stopList) {
+        List<String> stopStrategyNameList = this.getScheduleStrategyManager().registerManagerFactory(this);
+        for (String strategyName : stopStrategyNameList) {
             this.stopServer(strategyName);
         }
         this.assignScheduleServer();
@@ -201,44 +207,71 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     /**
      * 根据策略重新分配调度任务的机器
+     *
      * @throws Exception
      */
     public void assignScheduleServer() throws Exception {
-        for (ScheduleStrategyRunntime run : this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid)) {
-            List<ScheduleStrategyRunntime> factoryList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByTaskType(run.getStrategyName());
-            if (factoryList.size() == 0 || this.isLeader(this.uuid, factoryList) == false) {
+        //获得这个uuid所在机器能够参与的所有任务列表
+        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList=this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
+
+        for (ScheduleStrategyRunntime scheduleStrategyRunntime :cheduleStrategyRunntimeList ) {
+            //获得指定strategyName下的所有机器列表的data数据，并且是排过序的，排序规则：按照uuid中的自增序列号进行升序排列
+            List<ScheduleStrategyRunntime> factoryList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByTaskType(scheduleStrategyRunntime.getStrategyName());
+            if (factoryList.size() == 0 ) { //如果1台机器都没有就放弃当前任务了
                 continue;
             }
-            ScheduleStrategy scheduleStrategy = this.scheduleStrategyManager.loadStrategy(run.getStrategyName());
+            //Leader的算法：uuid中自境序列号中最小的那个
+            boolean isLeader = this.isLeader(this.uuid, factoryList);
+            if(!isLeader){ //进行任务分配的只有Leader哦，非Leader的直接 continue
+                continue;
+            }
 
-            int[] nums = ScheduleUtil.assignTaskNumber(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
+            //获得指定任务的概要配置信息
+            ScheduleStrategy scheduleStrategy = this.scheduleStrategyManager.loadStrategy(scheduleStrategyRunntime.getStrategyName());
+
+            //参数含义：实际机器数量，分配的线程组数量(1项任务分配给多少个团队来执行)，分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
+            //lzc 20171224:上面第3个参数（分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)）,已作废
+            //举例说明， 8，8，0 => taskItemNums=[1,1,1,1,1,1,1,1 ]
+            //举例说明， 4，8，0 => taskItemNums=[2,2,2,2 ]
+            //举例说明， 3，8，0 => taskItemNums=[3,3,2 ]
+            int[] taskItemNums = ScheduleUtil.assignTaskNumber(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
             for (int i = 0; i < factoryList.size(); i++) {
                 ScheduleStrategyRunntime factory = factoryList.get(i);
                 //更新请求的服务器数量
-                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(run.getStrategyName(),
-                        factory.getUuid(), nums[i]);
+                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(scheduleStrategyRunntime.getStrategyName(),factory.getUuid(), taskItemNums[i]);
             }
         }
     }
 
+    /**
+     * Leader的算法：uuid中自境序列号中最小的那个
+     *
+     * //TODO:一点疑问：factoryList已经是有序的，为什么不用当前uuid.equals(factoryList.get(0))来判断呢
+     * @param uuid
+     * @param factoryList
+     * @return
+     */
     public boolean isLeader(String uuid, List<ScheduleStrategyRunntime> factoryList) {
         try {
             long no = Long.parseLong(uuid.substring(uuid.lastIndexOf("$") + 1));
             for (ScheduleStrategyRunntime server : factoryList) {
-                if (no > Long.parseLong(server.getUuid().substring(
-                        server.getUuid().lastIndexOf("$") + 1))) {
+                if (no > Long.parseLong(server.getUuid().substring( server.getUuid().lastIndexOf("$") + 1)) ) {
                     return false;
                 }
             }
             return true;
         } catch (Exception e) {
-            logger.error("判断Leader出错：uuif=" + uuid, e);
+            logger.error("判断Leader出错：uui=" + uuid, e);
+            //TODO:既然出错了，为什么直接返回true，这里会不会有问题
             return true;
         }
     }
 
     public void reRunScheduleServer() throws Exception {
-        for (ScheduleStrategyRunntime run : this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid)) {
+        //获得这个uuid所在机器能够参与的所有任务列表
+        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList=this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
+
+        for (ScheduleStrategyRunntime run : cheduleStrategyRunntimeList ) {
             List<IStrategyTask> list = this.managerMap.get(run.getStrategyName());
             if (list == null) {
                 list = new ArrayList<IStrategyTask>();
@@ -265,7 +298,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     }
 
     /**
-     * 终止一类任务
+     * 终止一类任务，当strategyName==null时终止所有任务
      *
      * @param strategyName
      * @throws Exception

@@ -82,20 +82,20 @@ public class ScheduleUtil {
     }
 
     /**
-     * 分配任务数量
+     * 计算每个机器被分配的任务项数量
+     *
      * @param serverNum 总的服务器数量
-     * @param taskItemNum 任务项数量
-     * @param maxNumOfOneServer 每个server最大任务项数目
-     * @param maxNum 总的任务数量
+     * @param taskItemNum 分配的线程组数量(1项任务分配给多少个团队来执行)
+     * @param @Deprecated numOfSingleServer 分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
      * @return
      */
-    public static int[] assignTaskNumber(int serverNum, int taskItemNum, int maxNumOfOneServer) {
+    public static int[] assignTaskNumber(int serverNum, int taskItemNum, int numOfSingleServer) {
         int[] taskNums = new int[serverNum];
         int numOfSingle = taskItemNum / serverNum;
         int otherNum = taskItemNum % serverNum;
         //20150323 删除, 任务分片保证分配到所有的线程组数上。 开始
-//		if (maxNumOfOneServer >0 && numOfSingle >= maxNumOfOneServer) {
-//			numOfSingle = maxNumOfOneServer;
+//		if (numOfSingleServer >0 && numOfSingle >= numOfSingleServer) {
+//			numOfSingle = numOfSingleServer;
 //			otherNum = 0;
 //		}
         //20150323 删除, 任务分片保证分配到所有的线程组数上。 结束

@@ -6,35 +6,29 @@ import org.apache.commons.lang.builder.ToStringBuilder;
  * 任务概要配置
  */
 public class ScheduleStrategy {
-    public enum Kind {Schedule, Java, Bean}
+    //public enum Kind {Schedule, Java, Bean}
 
-    /**
-     * 任务名称
-     */
+    //任务名称
     private String strategyName;
 
     private String[] IPList;
 
+    @Deprecated
+    //分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
     private int numOfSingleServer;
-    /**
-     * 指定需要执行调度的机器数量
-     */
+
+    //分配的线程组数量(1项任务分配给多少个团队来执行)
     private int assignNum;
 
     private Kind kind;
 
-    /**
-     * Schedule Name,Class Name、Bean Name
-     */
+    //Schedule Name,Class Name、Bean Name
     private String taskName;
 
     private String taskParameter;
 
-    /**
-     * 服务状态: pause,resume
-     */
+    //服务状态: pause,resume
     private String sts = STS_RESUME;
-
     public static String STS_PAUSE = "pause";
     public static String STS_RESUME = "resume";
 
@@ -67,10 +61,12 @@ public class ScheduleStrategy {
         IPList = iPList;
     }
 
+    @Deprecated
     public void setNumOfSingleServer(int numOfSingleServer) {
         this.numOfSingleServer = numOfSingleServer;
     }
 
+    @Deprecated
     public int getNumOfSingleServer() {
         return numOfSingleServer;
     }

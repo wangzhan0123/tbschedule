@@ -1,32 +1,26 @@
 package com.taobao.pamirs.schedule.strategy;
 
-import com.taobao.pamirs.schedule.strategy.ScheduleStrategy.Kind;
 
 public class ScheduleStrategyRunntime {
 
-    /**
-     * 任务类型
-     */
+    /** 任务名称 */
     String strategyName;
     String uuid;
     String ip;
 
     private Kind kind;
 
-    /**
-     * Schedule Name,Class Name、Bean Name
-     */
-    private String taskName;
+    //TODO:ZK节点中没有看到这个taskName,看看是不是可以删除掉
+    /**  Schedule Name,Class Name、Bean Name */
+    //private String taskName;
 
     private String taskParameter;
 
-    /**
-     * 需要的任务数量
-     */
+    //TODO:建议更名为 taskItemNum
+    /** 参与执行的任务项数量  */
     int requestNum;
-    /**
-     * 当前的任务数量
-     */
+
+    /** 当前的任务数量 */
     int currentNum;
 
     String message;
@@ -71,13 +65,13 @@ public class ScheduleStrategyRunntime {
         this.kind = kind;
     }
 
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
+    //public String getTaskName() {
+    //    return taskName;
+    //}
+    //
+    //public void setTaskName(String taskName) {
+    //    this.taskName = taskName;
+    //}
 
     public String getTaskParameter() {
         return taskParameter;
@@ -107,7 +101,7 @@ public class ScheduleStrategyRunntime {
     public String toString() {
         return "ScheduleStrategyRunntime [strategyName=" + strategyName
                 + ", uuid=" + uuid + ", ip=" + ip + ", kind=" + kind
-                + ", taskName=" + taskName + ", taskParameter=" + taskParameter
+                +  ", taskParameter=" + taskParameter
                 + ", requestNum=" + requestNum + ", currentNum=" + currentNum
                 + ", message=" + message + "]";
     }
