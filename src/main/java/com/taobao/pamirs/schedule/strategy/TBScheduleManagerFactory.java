@@ -292,7 +292,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             while (list.size() < run.getRequestNum()) {
                 IStrategyTask result = this.createStrategyTask(strategy);
                 if (null == result) {
-                    logger.error("strategy对应的配置有问题。strategy name=" + strategy.getStrategyName());
+                    logger.error("strategy对应的配置有问题。strategyName=" + strategy.getStrategyName());
                 }
                 list.add(result);
             }
