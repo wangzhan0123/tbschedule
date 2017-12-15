@@ -15,10 +15,10 @@ public class TBScheduleManagerDynamic extends TBScheduleManager {
     }
 
     public void initial() throws Exception {
-        if (scheduleCenter.isLeader(this.currenScheduleServer.getUuid(),
-                scheduleCenter.loadScheduleServerNames(this.currenScheduleServer.getTaskType()))) {
+        if (scheduleTaskManager.isLeader(this.currenScheduleServer.getUuid(),
+                scheduleTaskManager.loadScheduleServerNames(this.currenScheduleServer.getTaskType()))) {
             // 是第一次启动，检查对应的zk目录是否存在
-            this.scheduleCenter.initialRunningInfo4Dynamic(this.currenScheduleServer.getBaseTaskType(),
+            this.scheduleTaskManager.initialRunningInfo4Dynamic(this.currenScheduleServer.getBaseTaskType(),
                     this.currenScheduleServer.getOwnSign());
         }
         computerStart();

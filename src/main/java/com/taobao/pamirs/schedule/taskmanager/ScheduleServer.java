@@ -13,48 +13,31 @@ import java.util.UUID;
  *
  */
 public class ScheduleServer {
-    /**
-     * 全局唯一编号
-     */
+    /**  全局唯一编号  */
     private String uuid;
     private long id;
-    /**
-     * 任务类型
-     */
+
+    /**  原始任务类型  */
+    private String baseTaskType;
+    /** 任务类型 */
     private String taskType;
 
-    /**
-     * 原始任务类型
-     */
-    private String baseTaskType;
-
     private String ownSign;
-    /**
-     * 机器IP地址
-     */
+    /**  机器IP地址  */
     private String ip;
 
-    /**
-     * 机器名称
-     */
+    /** 机器名称  */
     private String hostName;
 
-    /**
-     * 数据处理线程数量
-     */
+    /**  数据处理线程数量  */
     private int threadNum;
-    /**
-     * 服务开始时间
-     */
+    /** 服务开始时间  */
     private Timestamp registerTime;
-    /**
-     * 最后一次心跳通知时间
-     */
+    /** 最后一次心跳通知时间 */
     private Timestamp heartBeatTime;
-    /**
-     * 最后一次取数据时间
-     */
+    /**  最后一次取数据时间  */
     private Timestamp lastFetchDataTime;
+
     /**
      * 处理描述信息，例如读取的任务数量，处理成功的任务数量，处理失败的数量，处理耗时
      * FetchDataCount=4430,FetcheDataNum=438570,DealDataSucess=438570,DealDataFail=0,DealSpendTime=651066
@@ -64,14 +47,10 @@ public class ScheduleServer {
     private String nextRunStartTime;
 
     private String nextRunEndTime;
-    /**
-     * 配置中心的当前时间
-     */
+    /** 配置中心的当前时间 */
     private Timestamp centerServerTime;
 
-    /**
-     * 数据版本号
-     */
+    /** 数据版本号 */
     private long version;
 
     private boolean isRegister;
@@ -82,29 +61,22 @@ public class ScheduleServer {
 
     }
 
-    public static ScheduleServer createScheduleServer(IScheduleDataManager aScheduleCenter, String aBaseTaskType,
-                                                      String aOwnSign, int aThreadNum)
-            throws Exception {
+    public static ScheduleServer createScheduleServer(IScheduleDataManager scheduleTaskManager, String baseTaskType, String ownSign, int threadNum) throws Exception {
         ScheduleServer result = new ScheduleServer();
-        result.baseTaskType = aBaseTaskType;
-        result.ownSign = aOwnSign;
-        result.taskType = ScheduleUtil.getTaskTypeByBaseAndOwnSign(
-                aBaseTaskType, aOwnSign);
+        result.baseTaskType = baseTaskType;
+        result.ownSign = ownSign;
+        result.taskType = ScheduleUtil.getTaskTypeByBaseAndOwnSign(baseTaskType, ownSign);
         result.ip = ScheduleUtil.getLocalIP();
         result.hostName = ScheduleUtil.getLocalHostName();
-        result.registerTime = new Timestamp(aScheduleCenter.getSystemTime());
-        result.threadNum = aThreadNum;
+        result.registerTime = new Timestamp(scheduleTaskManager.getSystemTime());
+        result.threadNum = threadNum;
         result.heartBeatTime = null;
         result.dealInfoDesc = "调度初始化";
         result.version = 0;
-        result.uuid = result.ip
-                + "$"
-                + (UUID.randomUUID().toString().replaceAll("-", "")
-                .toUpperCase());
+        result.uuid = result.ip + "$" + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
         SimpleDateFormat DATA_FORMAT_yyyyMMdd = new SimpleDateFormat("yyMMdd");
-        String s = DATA_FORMAT_yyyyMMdd.format(new Date(aScheduleCenter.getSystemTime()));
-        result.id = Long.parseLong(s) * 100000000
-                + Math.abs(result.uuid.hashCode() % 100000000);
+        String s = DATA_FORMAT_yyyyMMdd.format(new Date(scheduleTaskManager.getSystemTime()));
+        result.id = Long.parseLong(s) * 100000000 + Math.abs(result.uuid.hashCode() % 100000000);
         return result;
     }
 

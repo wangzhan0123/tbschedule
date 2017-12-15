@@ -140,8 +140,11 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     public IStrategyTask createStrategyTask(ScheduleStrategy strategy)   throws Exception {
         IStrategyTask result = null;
         try {
+            //strategy.getKind()默认值是Kind.Schedule，关于Kind.Java，Kind.Bean目前都没有用到
             if (Kind.Schedule == strategy.getKind()) {
+                //baseTaskType默认值与taskName相同
                 String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(strategy.getTaskName());
+                //ownSign默认值"BASE"
                 String ownSign = ScheduleUtil.splitOwnsignFromTaskType(strategy.getTaskName());
                 result = new TBScheduleManagerStatic(this, baseTaskType, ownSign, scheduleTaskManager);
             } else if (Kind.Java == strategy.getKind()) {

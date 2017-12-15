@@ -73,6 +73,7 @@ public class ScheduleUtil {
 
     }
 
+    //TODO:是不是可以将方法名改成splitOwnsignFromTaskN
     public static String splitOwnsignFromTaskType(String taskType) {
         if (taskType.indexOf("$") >= 0) {
             return taskType.substring(taskType.indexOf("$") + 1);

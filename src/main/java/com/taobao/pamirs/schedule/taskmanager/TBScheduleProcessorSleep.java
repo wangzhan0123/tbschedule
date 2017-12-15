@@ -175,7 +175,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                         scheduleManager.getScheduleServer().getOwnSign(),
                         this.scheduleManager.getTaskItemCount(), tmpTaskList,
                         taskTypeInfo.getFetchDataNumber());
-                scheduleManager.getScheduleServer().setLastFetchDataTime(new Timestamp(scheduleManager.scheduleCenter.getSystemTime()));
+                scheduleManager.getScheduleServer().setLastFetchDataTime(new Timestamp(scheduleManager.scheduleTaskManager.getSystemTime()));
                 if (tmpList != null) {
                     this.taskList.addAll(tmpList);
                 }
@@ -224,35 +224,35 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                     }
 
                     try {//运行相关的程序
-                        startTime = scheduleManager.scheduleCenter.getSystemTime();
+                        startTime = scheduleManager.scheduleTaskManager.getSystemTime();
                         if (this.isMutilTask == false) {
                             if (((IScheduleTaskDealSingle) this.taskDealBean).execute(executeTask, scheduleManager.getScheduleServer().getOwnSign()) == true) {
-                                addSuccessNum(1, scheduleManager.scheduleCenter.getSystemTime()
+                                addSuccessNum(1, scheduleManager.scheduleTaskManager.getSystemTime()
                                                 - startTime,
                                         "com.taobao.pamirs.schedule.TBScheduleProcessorSleep.run");
                             } else {
-                                addFailNum(1, scheduleManager.scheduleCenter.getSystemTime()
+                                addFailNum(1, scheduleManager.scheduleTaskManager.getSystemTime()
                                                 - startTime,
                                         "com.taobao.pamirs.schedule.TBScheduleProcessorSleep.run");
                             }
                         } else {
                             if (((IScheduleTaskDealMulti) this.taskDealBean)
                                     .execute((Object[]) executeTask, scheduleManager.getScheduleServer().getOwnSign()) == true) {
-                                addSuccessNum(((Object[]) executeTask).length, scheduleManager.scheduleCenter.getSystemTime()
+                                addSuccessNum(((Object[]) executeTask).length, scheduleManager.scheduleTaskManager.getSystemTime()
                                                 - startTime,
                                         "com.taobao.pamirs.schedule.TBScheduleProcessorSleep.run");
                             } else {
-                                addFailNum(((Object[]) executeTask).length, scheduleManager.scheduleCenter.getSystemTime()
+                                addFailNum(((Object[]) executeTask).length, scheduleManager.scheduleTaskManager.getSystemTime()
                                                 - startTime,
                                         "com.taobao.pamirs.schedule.TBScheduleProcessorSleep.run");
                             }
                         }
                     } catch (Throwable ex) {
                         if (this.isMutilTask == false) {
-                            addFailNum(1, scheduleManager.scheduleCenter.getSystemTime() - startTime,
+                            addFailNum(1, scheduleManager.scheduleTaskManager.getSystemTime() - startTime,
                                     "TBScheduleProcessor.run");
                         } else {
-                            addFailNum(((Object[]) executeTask).length, scheduleManager.scheduleCenter.getSystemTime()
+                            addFailNum(((Object[]) executeTask).length, scheduleManager.scheduleTaskManager.getSystemTime()
                                             - startTime,
                                     "TBScheduleProcessor.run");
                         }
@@ -266,7 +266,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                 if (this.m_lockObject.realseThreadButNotLast() == false) {
                     int size = 0;
                     Thread.currentThread().sleep(100);
-                    startTime = scheduleManager.scheduleCenter.getSystemTime();
+                    startTime = scheduleManager.scheduleTaskManager.getSystemTime();
                     // 装载数据
                     size = this.loadScheduleData();
                     if (size > 0) {

@@ -88,7 +88,7 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     private Timer heartBeatTimer;
 
-    protected IScheduleDataManager scheduleCenter;
+    protected IScheduleDataManager scheduleTaskManager;
 
     protected String startErrorInfo = null;
 
@@ -102,16 +102,16 @@ abstract class TBScheduleManager implements IStrategyTask {
 
     TBScheduleManagerFactory factory;
 
-    TBScheduleManager(TBScheduleManagerFactory aFactory, String baseTaskType, String ownSign, IScheduleDataManager aScheduleCenter) throws Exception {
-        this.factory = aFactory;
+    TBScheduleManager(TBScheduleManagerFactory factory, String baseTaskType, String ownSign, IScheduleDataManager scheduleTaskManager) throws Exception {
+        this.factory = factory;
         this.currentSerialNumber = serialNumber();
-        this.scheduleCenter = aScheduleCenter;
-        this.taskTypeInfo = this.scheduleCenter.loadTaskTypeBaseInfo(baseTaskType);
+        this.scheduleTaskManager = scheduleTaskManager;
+        this.taskTypeInfo = this.scheduleTaskManager.loadTaskTypeBaseInfo(baseTaskType);
         log.info("create TBScheduleManager for taskType:" + baseTaskType);
         //清除已经过期1天的TASK,OWN_SIGN的组合。超过一天没有活动server的视为过期
-        this.scheduleCenter.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期OWN_SIGN信息", this.taskTypeInfo.getExpireOwnSignInterval());
+        this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期OWN_SIGN信息", this.taskTypeInfo.getExpireOwnSignInterval());
 
-        Object dealBean = aFactory.getBean(this.taskTypeInfo.getDealBeanName());
+        Object dealBean = factory.getBean(this.taskTypeInfo.getDealBeanName());
         if (dealBean == null) {
             throw new Exception("SpringBean " + this.taskTypeInfo.getDealBeanName() + " 不存在");
         }
@@ -125,9 +125,9 @@ abstract class TBScheduleManager implements IStrategyTask {
                     + this.taskTypeInfo.getJudgeDeadInterval()
                     + ",HeartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
         }
-        this.currenScheduleServer = ScheduleServer.createScheduleServer(this.scheduleCenter, baseTaskType, ownSign, this.taskTypeInfo.getThreadNumber());
+        this.currenScheduleServer = ScheduleServer.createScheduleServer(this.scheduleTaskManager, baseTaskType, ownSign, this.taskTypeInfo.getThreadNumber());
         this.currenScheduleServer.setManagerFactoryUUID(this.factory.getUuid());
-        scheduleCenter.registerScheduleServer(this.currenScheduleServer);
+        this.scheduleTaskManager.registerScheduleServer(this.currenScheduleServer);
         this.mBeanName = "pamirs:name=" + "schedule.ServerMananger." + this.currenScheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.currenScheduleServer.getTaskType() + "-" + this.currentSerialNumber + "-HeartBeat");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
@@ -197,10 +197,10 @@ abstract class TBScheduleManager implements IStrategyTask {
             } else {
                 this.currenScheduleServer.setDealInfoDesc(startErrorInfo);
             }
-            if (this.scheduleCenter.refreshScheduleServer(this.currenScheduleServer) == false) {
+            if (this.scheduleTaskManager.refreshScheduleServer(this.currenScheduleServer) == false) {
                 //更新信息失败，清除内存数据后重新注册
                 this.clearMemoInfo();
-                this.scheduleCenter.registerScheduleServer(this.currenScheduleServer);
+                this.scheduleTaskManager.registerScheduleServer(this.currenScheduleServer);
             }
         } finally {
             registerLock.unlock();
@@ -225,7 +225,7 @@ abstract class TBScheduleManager implements IStrategyTask {
                 tmpStr = tmpStr.substring("startrun:".length());
             }
             CronExpression cexpStart = new CronExpression(tmpStr);
-            Date current = new Date(this.scheduleCenter.getSystemTime());
+            Date current = new Date(this.scheduleTaskManager.getSystemTime());
             Date firstStartTime = cexpStart.getNextValidTimeAfter(current);
             this.heartBeatTimer.schedule(
                     new PauseOrResumeScheduleTask(this, this.heartBeatTimer,
@@ -374,7 +374,7 @@ abstract class TBScheduleManager implements IStrategyTask {
             // 取消心跳TIMER
             this.heartBeatTimer.cancel();
             // 从配置中心注销自己
-            this.scheduleCenter.unRegisterScheduleServer(this.currenScheduleServer.getTaskType(),this.currenScheduleServer.getUuid());
+            this.scheduleTaskManager.unRegisterScheduleServer(this.currenScheduleServer.getTaskType(), this.currenScheduleServer.getUuid());
         } finally {
             registerLock.unlock();
         }
