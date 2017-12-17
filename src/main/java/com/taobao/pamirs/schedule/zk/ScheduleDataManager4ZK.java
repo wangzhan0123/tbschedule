@@ -98,6 +98,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //清除所有的老信息，只有leader能执行此操作
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
         try {
+            log.info("删除所有taskItem子节点信息zkPath="+zkPath);
             ZKTools.deleteTree(this.getZooKeeper(), zkPath);
         } catch (Exception e) {
             //需要处理zookeeper session过期异常
@@ -168,6 +169,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
 
     /**
      * 根据基础配置里面的任务项来创建各个域里面的任务项
+     *
      * @param baseTaskType
      * @param ownSign
      * @param baseTaskItems
@@ -485,20 +487,27 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
 
     public void clearExpireTaskTypeRunningInfo(String baseTaskType, String serverUUID, double expireDateInternal) throws Exception {
         //这里为什么会是list呢，就是为了区分环境信息，比如开发环境与测试环境
-        //但是目前的管理平台仅支持一种开发环境
-        List<String> taskNameList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
+        //TODO:但是目前我们的管理平台仅支持一种开发环境
+        List<String> taskNameTypeList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
 
-        for (String taskName : taskNameList) {
-            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskName + "/" + this.PATH_TaskItem;
+        for (String taskNameType : taskNameTypeList) {
+            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskNameType + "/" + this.PATH_TaskItem;
             Stat stat = this.getZooKeeper().exists(zkPath, false);
             if (stat == null || getSystemTime() - stat.getMtime() > (long) (expireDateInternal * 24 * 3600 * 1000)) {
-                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskName;
+                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskNameType;
                 log.info("检测zkPath("+zkPath+")节点，最后修改时间超过了("+expireDateInternal+")天，所以即将删除节点："+tmpPath);
                 ZKTools.deleteTree(this.getZooKeeper(), tmpPath);
             }
         }
     }
 
+    /**
+     * 调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/serverUuid最后修改时间超过了expireTime，就会被清除
+     * @param taskType
+     * @param expireTime expireTime(一般配置是60秒)
+     * @return
+     * @throws Exception
+     */
     @Override
     public int clearExpireScheduleServer(String taskType, long expireTime) throws Exception {
         int result = 0;
@@ -512,11 +521,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
             this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT);
         }
-        for (String name : this.getZooKeeper().getChildren(zkPath, false)) {
+        for (String scheduleServerList : this.getZooKeeper().getChildren(zkPath, false)) {
             try {
-                Stat stat = this.getZooKeeper().exists(zkPath + "/" + name, false);
+                Stat stat = this.getZooKeeper().exists(zkPath + "/" + scheduleServerList, false);
                 if (getSystemTime() - stat.getMtime() > expireTime) {
-                    ZKTools.deleteTree(this.getZooKeeper(), zkPath + "/" + name);
+                    log.info("清除过期的scheduleServer="+zkPath+ "/" + scheduleServerList);
+                    ZKTools.deleteTree(this.getZooKeeper(), zkPath + "/" + scheduleServerList);
                     result++;
                 }
             } catch (Exception e) {
@@ -528,14 +538,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     @Override
-    public int clearTaskItem(String taskType,
-                             List<String> serverList) throws Exception {
+    public int clearTaskItem(String taskType, List<String> serverList) throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
 
         int result = 0;
-        for (String name : this.getZooKeeper().getChildren(zkPath, false)) {
-            byte[] curServerValue = this.getZooKeeper().getData(zkPath + "/" + name + "/cur_server", false, null);
+        for (String taskItemId : this.getZooKeeper().getChildren(zkPath, false)) {
+            byte[] curServerValue = this.getZooKeeper().getData(zkPath + "/" + taskItemId + "/cur_server", false, null);
             if (curServerValue != null) {
                 String curServer = new String(curServerValue);
                 boolean isFind = false;
@@ -546,7 +555,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
                     }
                 }
                 if (isFind == false) {
-                    this.getZooKeeper().setData(zkPath + "/" + name + "/cur_server", null, -1);
+                    this.getZooKeeper().setData(zkPath + "/" + taskItemId + "/cur_server", null, -1);
                     result = result + 1;
                 }
             } else {
@@ -556,6 +565,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         return result;
     }
 
+    /**
+     * 获取当前任务参与执行的机器列表，按照自增序列号升序排列
+     *
+     * @param taskType
+     * @return
+     * @throws Exception
+     */
     public List<String> loadScheduleServerNames(String taskType) throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server;
@@ -812,18 +828,24 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT);
         }
-        String realPath = null;
+
+        //之前在ScheduleServer.createScheduleServer方法中已经给uuid赋值过了，这里相当于不用上一次的赋值了,why,
+        //因为这个方法registerScheduleServer，会在heartBeatTimer里可能会重复调用
         //此处必须增加UUID作为唯一性保障
-        String zkServerPath = zkPath + "/" + server.getTaskType() + "$" + server.getIp() + "$"
-                + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
-        realPath = this.getZooKeeper().create(zkServerPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT_SEQUENTIAL);
+       String zkServerPath = zkPath + "/" + server.getTaskType() + "$" + server.getIp() + "$"
+                           + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
+//        String zkServerPath = zkPath + "/" + server.getUuid();
+        String realPath = this.getZooKeeper().create(zkServerPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT_SEQUENTIAL);
+        //这里的uuid实际上是uuid+自增序列号
         server.setUuid(realPath.substring(realPath.lastIndexOf("/") + 1));
 
         Timestamp heartBeatTime = new Timestamp(this.getSystemTime());
+        //这里heartBeatTime取的是zk服务器上当前的时间
         server.setHeartBeatTime(heartBeatTime);
 
         String valueString = this.gson.toJson(server);
         this.getZooKeeper().setData(realPath, valueString.getBytes(), -1);
+
         server.setRegister(true);
     }
 

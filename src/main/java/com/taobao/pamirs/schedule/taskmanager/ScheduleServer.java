@@ -18,8 +18,10 @@ public class ScheduleServer {
     private long id;
 
     /**  原始任务类型  */
+    //TODO:建议更名为taskName
     private String baseTaskType;
-    /** 任务类型 */
+
+    /** 任务类型,示例：taskName$test */
     private String taskType;
 
     private String ownSign;
@@ -71,9 +73,11 @@ public class ScheduleServer {
         result.registerTime = new Timestamp(scheduleTaskManager.getSystemTime());
         result.threadNum = threadNum;
         result.heartBeatTime = null;
-        result.dealInfoDesc = "调度初始化";
+        result.dealInfoDesc = "ScheduleServer初始化";
         result.version = 0;
-        result.uuid = result.ip + "$" + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
+
+        result.uuid = result.taskType+ "$" +result.ip + "$" + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$" ;
+
         SimpleDateFormat DATA_FORMAT_yyyyMMdd = new SimpleDateFormat("yyMMdd");
         String s = DATA_FORMAT_yyyyMMdd.format(new Date(scheduleTaskManager.getSystemTime()));
         result.id = Long.parseLong(s) * 100000000 + Math.abs(result.uuid.hashCode() % 100000000);

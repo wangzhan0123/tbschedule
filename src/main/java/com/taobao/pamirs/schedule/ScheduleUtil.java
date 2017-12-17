@@ -64,6 +64,7 @@ public class ScheduleUtil {
         return baseType + "$" + ownSign;
     }
 
+    //TODO:这个方法重点注意，通过taskType可以得到baseTaskType,也就是说taskType一定包含了baseTaskType
     public static String splitBaseTaskTypeFromTaskType(String taskType) {
         if (taskType.indexOf("$") >= 0) {
             return taskType.substring(0, taskType.indexOf("$"));
@@ -73,7 +74,7 @@ public class ScheduleUtil {
 
     }
 
-    //TODO:是不是可以将方法名改成splitOwnsignFromTaskN
+    //TODO:是不是可以将方法名改成splitOwnsignFromTaskName
     public static String splitOwnsignFromTaskType(String taskType) {
         if (taskType.indexOf("$") >= 0) {
             return taskType.substring(taskType.indexOf("$") + 1);

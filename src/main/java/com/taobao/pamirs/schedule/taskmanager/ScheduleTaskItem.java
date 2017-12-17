@@ -6,14 +6,7 @@ package com.taobao.pamirs.schedule.taskmanager;
  *
  */
 public class ScheduleTaskItem {
-    public enum TaskItemSts {
-        ACTIVTE, FINISH, HALT
-    }
-
-    /**
-     * 处理任务类型
-     */
-    private String taskType;
+    public enum TaskItemSts { ACTIVTE, FINISH, HALT }
 
     /**
      * 原始任务类型
@@ -21,28 +14,9 @@ public class ScheduleTaskItem {
     private String baseTaskType;
 
     /**
-     * 完成状态
+     * 处理任务类型
      */
-    private TaskItemSts sts = TaskItemSts.ACTIVTE;
-
-    /**
-     * 任务处理需要的参数
-     */
-    private String dealParameter = "";
-
-    /**
-     * 任务处理情况,用于任务处理器会写一些信息
-     */
-    private String dealDesc = "";
-
-
-    public String getBaseTaskType() {
-        return baseTaskType;
-    }
-
-    public void setBaseTaskType(String baseTaskType) {
-        this.baseTaskType = baseTaskType;
-    }
+    private String taskType;
 
     /**
      * 队列的环境标识
@@ -54,6 +28,11 @@ public class ScheduleTaskItem {
      */
     private String taskItem;
     /**
+     * 任务处理需要的参数
+     */
+    private String dealParameter = "";
+
+    /**
      * 持有当前任务队列的任务处理器
      */
     private String currentScheduleServer;
@@ -63,9 +42,20 @@ public class ScheduleTaskItem {
     private String requestScheduleServer;
 
     /**
+     * 任务处理情况,用于任务处理器会写一些信息
+     */
+    private String dealDesc = "";
+
+    /**
      * 数据版本号
      */
     private long version;
+
+    /**
+     * 完成状态
+     */
+    private TaskItemSts sts = TaskItemSts.ACTIVTE;
+
 
     public String getTaskType() {
         return taskType;
@@ -115,11 +105,6 @@ public class ScheduleTaskItem {
         this.ownSign = ownSign;
     }
 
-    public String toString() {
-        return "TASK_TYPE=" + this.taskType + ":TASK_ITEM=" + this.taskItem
-                + ":CUR_SERVER=" + this.currentScheduleServer + ":REQ_SERVER=" + this.requestScheduleServer + ":DEAL_PARAMETER=" + this.dealParameter;
-    }
-
     public void setDealDesc(String dealDesc) {
         this.dealDesc = dealDesc;
     }
@@ -144,4 +129,33 @@ public class ScheduleTaskItem {
         return dealParameter;
     }
 
+    public String getBaseTaskType() {
+        return baseTaskType;
+    }
+
+    public void setBaseTaskType(String baseTaskType) {
+        this.baseTaskType = baseTaskType;
+    }
+
+//    public String toString() {
+//        return "TASK_TYPE=" + this.taskType + ":TASK_ITEM=" + this.taskItem
+//                + ":CUR_SERVER=" + this.currentScheduleServer + ":REQ_SERVER=" + this.requestScheduleServer + ":DEAL_PARAMETER=" + this.dealParameter;
+//    }
+
+
+    @Override
+    public String toString() {
+        return "ScheduleTaskItem{" +
+                "baseTaskType='" + baseTaskType + '\'' +
+                ", taskType='" + taskType + '\'' +
+                ", ownSign='" + ownSign + '\'' +
+                ", taskItem='" + taskItem + '\'' +
+                ", dealParameter='" + dealParameter + '\'' +
+                ", currentScheduleServer='" + currentScheduleServer + '\'' +
+                ", requestScheduleServer='" + requestScheduleServer + '\'' +
+                ", dealDesc='" + dealDesc + '\'' +
+                ", version=" + version +
+                ", sts=" + sts +
+                '}';
+    }
 }
