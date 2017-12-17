@@ -484,11 +484,17 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     public void clearExpireTaskTypeRunningInfo(String baseTaskType, String serverUUID, double expireDateInternal) throws Exception {
-        for (String name : this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false)) {
-            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + name + "/" + this.PATH_TaskItem;
+        //这里为什么会是list呢，就是为了区分环境信息，比如开发环境与测试环境
+        //但是目前的管理平台仅支持一种开发环境
+        List<String> taskNameList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
+
+        for (String taskName : taskNameList) {
+            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskName + "/" + this.PATH_TaskItem;
             Stat stat = this.getZooKeeper().exists(zkPath, false);
             if (stat == null || getSystemTime() - stat.getMtime() > (long) (expireDateInternal * 24 * 3600 * 1000)) {
-                ZKTools.deleteTree(this.getZooKeeper(), this.PATH_BaseTaskType + "/" + baseTaskType + "/" + name);
+                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskName;
+                log.info("检测zkPath("+zkPath+")节点，最后修改时间超过了("+expireDateInternal+")天，所以即将删除节点："+tmpPath);
+                ZKTools.deleteTree(this.getZooKeeper(), tmpPath);
             }
         }
     }

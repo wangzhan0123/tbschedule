@@ -6,78 +6,54 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 调度任务类型
+ * 任务详细配置信息
  * @author xuannan
  *
  */
 public class ScheduleTaskType implements java.io.Serializable {
 
-    /**
-     *
-     */
+    //
     private static final long serialVersionUID = 1L;
-    /**
-     * 任务类型
-     */
+//    任务类型
     private String baseTaskType;
-    /**
-     * 向配置中心更新心跳信息的频率
-     */
-    private long heartBeatRate = 5 * 1000;//1分钟
 
-    /**
-     * 判断一个服务器死亡的周期。为了安全，至少是心跳周期的两倍以上
-     */
-    private long judgeDeadInterval = 1 * 60 * 1000;//2分钟
+    //向配置中心更新心跳信息的频率(单位：s)
+    private long heartBeatRate = 5 * 1000;//5秒
 
-    /**
-     * 当没有数据的时候，休眠的时间
-     *
-     */
+    //判断一个服务器死亡的周期。为了安全，至少是心跳周期的两倍以上(单位：s)
+    private long judgeDeadInterval = 1 * 60 * 1000;//60秒
+
+    //当没有数据的时候，休眠的时间(单位：s)
     private int sleepTimeNoData = 500;
 
-    /**
-     * 在每次数据处理晚后休眠的时间
-     */
+    //在每次数据处理晚后休眠的时间(单位：s)
     private int sleepTimeInterval = 0;
 
-    /**
-     * 每次获取数据的数量
-     */
+    //每次获取数据的数量
     private int fetchDataNumber = 500;
 
-    /**
-     * 在批处理的时候，每次处理的数据量
-     */
+    //在批处理的时候，每次处理的数据量
     private int executeNumber = 1;
 
+    //单线程组的线程数量
     private int threadNumber = 5;
 
-    /**
-     * 调度器类型
-     */
+    //调度器类型
     private String processorType = "SLEEP";
-    /**
-     * 允许执行的开始时间
-     */
+
+    //允许执行的开始时间(Quartz表达式规则)
     private String permitRunStartTime;
-    /**
-     * 允许执行的开始时间
-     */
+
+    //允许执行的开始时间(Quartz表达式规则)，可为空
     private String permitRunEndTime;
 
-    /**
-     * 清除过期环境信息的时间间隔,以天为单位
-     */
+    //清除过期环境信息的时间间隔（单位：天）
     private double expireOwnSignInterval = 1;
 
-    /**
-     * 处理任务的BeanName
-     */
+    //处理任务的BeanName
     private String dealBeanName;
-    /**
-     * 任务bean的参数，由用户自定义格式的字符串
-     */
+
+    //任务bean的参数，由用户自定义格式的字符串
     private String taskParameter;
 
     //任务类型：静态static,动态dynamic
@@ -86,29 +62,26 @@ public class ScheduleTaskType implements java.io.Serializable {
     public static String TASKKIND_STATIC = "static";
     public static String TASKKIND_DYNAMIC = "dynamic";
 
-
-    /**
-     * 任务项数组
-     */
+    //任务项数组
     private String[] taskItems;
 
-    /**
-     * 每个线程组能处理的最大任务项目书目
-     */
+    //每个线程组能处理的最大任务项目项数量（已作废）
+    @Deprecated
     private int maxTaskItemsOfOneThreadGroup = 0;
-    /**
-     * 版本号
-     */
+
+    //版本号
     private long version;
 
-    /**
-     * 服务状态: pause,resume
-     */
+    //服务状态: pause,resume
     private String sts = STS_RESUME;
 
     public static String STS_PAUSE = "pause";
     public static String STS_RESUME = "resume";
 
+
+//    "0:{TYPE=A,KIND=1},1:{TYPE=A,KIND=2},2:{TYPE=A,KIND=3},3:{TYPE=A,KIND=4}," +
+//    "4:{TYPE=A,KIND=5},5:{TYPE=A,KIND=6},6:{TYPE=A,KIND=7},7:{TYPE=A,KIND=8}," +
+//    "8:{TYPE=A,KIND=9},9:{TYPE=A,KIND=10}"
     public static String[] splitTaskItem(String str) {
         List<String> list = new ArrayList<String>();
         int start = 0;

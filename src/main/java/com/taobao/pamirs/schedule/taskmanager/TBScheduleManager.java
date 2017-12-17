@@ -82,7 +82,7 @@ abstract class TBScheduleManager implements IStrategyTask {
     protected boolean isNeedReloadTaskItem = true;
 
 
-    private String mBeanName;
+//    private String mBeanName;
     /**
      * 向配置中心更新信息的定时器
      */
@@ -102,6 +102,14 @@ abstract class TBScheduleManager implements IStrategyTask {
 
     TBScheduleManagerFactory factory;
 
+    /**
+     *
+     * @param factory
+     * @param baseTaskType
+     * @param ownSign 默认值是BASE
+     * @param scheduleTaskManager
+     * @throws Exception
+     */
     TBScheduleManager(TBScheduleManagerFactory factory, String baseTaskType, String ownSign, IScheduleDataManager scheduleTaskManager) throws Exception {
         this.factory = factory;
         this.currentSerialNumber = serialNumber();
@@ -109,7 +117,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.taskTypeInfo = this.scheduleTaskManager.loadTaskTypeBaseInfo(baseTaskType);
         log.info("create TBScheduleManager for taskType:" + baseTaskType);
         //清除已经过期1天的TASK,OWN_SIGN的组合。超过一天没有活动server的视为过期
-        this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期OWN_SIGN信息", this.taskTypeInfo.getExpireOwnSignInterval());
+        this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期ownSign信息", this.taskTypeInfo.getExpireOwnSignInterval());
 
         Object dealBean = factory.getBean(this.taskTypeInfo.getDealBeanName());
         if (dealBean == null) {
@@ -121,14 +129,14 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.taskDealBean = (IScheduleTaskDeal) dealBean;
 
         if (this.taskTypeInfo.getJudgeDeadInterval() < this.taskTypeInfo.getHeartBeatRate() * 5) {
-            throw new Exception("数据配置存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：JudgeDeadInterval = "
+            throw new Exception("数据配置存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：judgeDeadInterval = "
                     + this.taskTypeInfo.getJudgeDeadInterval()
-                    + ",HeartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
+                    + ",heartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
         }
         this.currenScheduleServer = ScheduleServer.createScheduleServer(this.scheduleTaskManager, baseTaskType, ownSign, this.taskTypeInfo.getThreadNumber());
         this.currenScheduleServer.setManagerFactoryUUID(this.factory.getUuid());
         this.scheduleTaskManager.registerScheduleServer(this.currenScheduleServer);
-        this.mBeanName = "pamirs:name=" + "schedule.ServerMananger." + this.currenScheduleServer.getUuid();
+//        this.mBeanName = "pamirs:name=" + "schedule.ServerMananger." + this.currenScheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.currenScheduleServer.getTaskType() + "-" + this.currentSerialNumber + "-HeartBeat");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
@@ -401,9 +409,9 @@ abstract class TBScheduleManager implements IStrategyTask {
         return this.currenScheduleServer;
     }
 
-    public String getmBeanName() {
-        return mBeanName;
-    }
+//    public String getmBeanName() {
+//        return mBeanName;
+//    }
 }
 
 class HeartBeatTimerTask extends java.util.TimerTask {
@@ -496,11 +504,11 @@ class StatisticsInfo {
     }
 
     public String getDealDescription() {
-        return "FetchDataCount=" + this.fetchDataCount
-                + ",FetchDataNum=" + this.fetchDataNum
-                + ",DealDataSucess=" + this.dealDataSucess
-                + ",DealDataFail=" + this.dealDataFail
-                + ",DealSpendTime=" + this.dealSpendTime
+        return "fetchDataCount=" + this.fetchDataCount
+                + ",fetchDataNum=" + this.fetchDataNum
+                + ",dealDataSucess=" + this.dealDataSucess
+                + ",dealDataFail=" + this.dealDataFail
+                + ",dealSpendTime=" + this.dealSpendTime
                 + ",otherCompareCount=" + this.otherCompareCount;
     }
 

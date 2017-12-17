@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * 调度服务器构造器
  *
  * @author xuannan
- *
  */
 public class TBScheduleManagerFactory implements ApplicationContextAware {
 
@@ -111,6 +110,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     /**
      * 在Zk状态正常后回调数据初始化
+     *
      * @throws Exception
      */
     public void initialData() throws Exception {
@@ -137,7 +137,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      * @return
      * @throws Exception
      */
-    public IStrategyTask createStrategyTask(ScheduleStrategy strategy)   throws Exception {
+    public IStrategyTask createStrategyTask(ScheduleStrategy strategy) throws Exception {
         IStrategyTask result = null;
         try {
             //strategy.getKind()默认值是Kind.Schedule，关于Kind.Java，Kind.Bean目前都没有用到
@@ -214,17 +214,17 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      */
     public void assignScheduleServer() throws Exception {
         //获得这个uuid所在机器能够参与的所有任务列表
-        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList=this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
+        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
 
-        for (ScheduleStrategyRunntime scheduleStrategyRunntime :cheduleStrategyRunntimeList ) {
+        for (ScheduleStrategyRunntime scheduleStrategyRunntime : cheduleStrategyRunntimeList) {
             //获得指定strategyName下的所有机器列表的data数据，并且是排过序的，排序规则：按照uuid中的自增序列号进行升序排列
             List<ScheduleStrategyRunntime> factoryList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByTaskType(scheduleStrategyRunntime.getStrategyName());
-            if (factoryList.size() == 0 ) { //如果1台机器都没有就放弃当前任务了
+            if (factoryList.size() == 0) { //如果1台机器都没有就放弃当前任务了
                 continue;
             }
             //Leader的算法：uuid中自境序列号中最小的那个
             boolean isLeader = this.isLeader(this.uuid, factoryList);
-            if(!isLeader){ //进行任务分配的只有Leader哦，非Leader的直接 continue
+            if (!isLeader) { //进行任务分配的只有Leader哦，非Leader的直接 continue
                 continue;
             }
 
@@ -240,15 +240,16 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             for (int i = 0; i < factoryList.size(); i++) {
                 ScheduleStrategyRunntime factory = factoryList.get(i);
                 //更新请求的服务器数量
-                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(scheduleStrategyRunntime.getStrategyName(),factory.getUuid(), taskItemNums[i]);
+                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(scheduleStrategyRunntime.getStrategyName(), factory.getUuid(), taskItemNums[i]);
             }
         }
     }
 
     /**
      * Leader的算法：uuid中自境序列号中最小的那个
-     *
+     * <p>
      * //TODO:一点疑问：factoryList已经是有序的，为什么不用当前uuid.equals(factoryList.get(0))来判断呢
+     *
      * @param uuid
      * @param factoryList
      * @return
@@ -257,7 +258,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         try {
             long no = Long.parseLong(uuid.substring(uuid.lastIndexOf("$") + 1));
             for (ScheduleStrategyRunntime server : factoryList) {
-                if (no > Long.parseLong(server.getUuid().substring( server.getUuid().lastIndexOf("$") + 1)) ) {
+                if (no > Long.parseLong(server.getUuid().substring(server.getUuid().lastIndexOf("$") + 1))) {
                     return false;
                 }
             }
@@ -271,9 +272,9 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     public void reRunScheduleServer() throws Exception {
         //获得这个uuid所在机器能够参与的所有任务列表
-        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList=this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
+        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
 
-        for (ScheduleStrategyRunntime run : cheduleStrategyRunntimeList ) {
+        for (ScheduleStrategyRunntime run : cheduleStrategyRunntimeList) {
             List<IStrategyTask> list = this.managerMap.get(run.getStrategyName());
             if (list == null) {
                 list = new ArrayList<IStrategyTask>();
@@ -380,6 +381,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     /**
      * 重启所有的服务
+     *
      * @throws Exception
      */
     public void reStart() throws Exception {

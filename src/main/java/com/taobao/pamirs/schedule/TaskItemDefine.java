@@ -33,8 +33,7 @@ public class TaskItemDefine {
 
     @Override
     public String toString() {
-        return "(t=" + taskItemId + ",p="
-                + parameter + ")";
+        return "(taskItemId=" + taskItemId + ",parameter=" + parameter + ")";
     }
 
 

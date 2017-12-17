@@ -20,6 +20,14 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
 
     private final Object NeedReloadTaskItemLock = new Object();
 
+    /**
+     *
+     * @param factory
+     * @param baseTaskType
+     * @param ownSign 默认值是BASE
+     * @param scheduleTaskManager
+     * @throws Exception
+     */
     public TBScheduleManagerStatic(TBScheduleManagerFactory factory, String baseTaskType, String ownSign, IScheduleDataManager scheduleTaskManager) throws Exception {
         super(factory, baseTaskType, ownSign, scheduleTaskManager);
     }
