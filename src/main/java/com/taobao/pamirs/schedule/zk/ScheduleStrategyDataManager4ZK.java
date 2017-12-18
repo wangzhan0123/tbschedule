@@ -8,12 +8,15 @@ import com.taobao.pamirs.schedule.strategy.ScheduleStrategyRunntime;
 import com.taobao.pamirs.schedule.strategy.TBScheduleManagerFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Writer;
 import java.sql.Timestamp;
 import java.util.*;
 
 public class ScheduleStrategyDataManager4ZK {
+    private static final Logger logger = LoggerFactory.getLogger(ScheduleStrategyDataManager4ZK.class);
 
     private ZKManager zkManager;
     private String PATH_Strategy;
@@ -144,7 +147,6 @@ public class ScheduleStrategyDataManager4ZK {
      * @throws Exception
      */
     public List<String> registerManagerFactory(TBScheduleManagerFactory managerFactory) throws Exception {
-
         if (managerFactory.getUuid() == null) {
             String uuid = managerFactory.getIp() + "$" + managerFactory.getHostName() + "$" + UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
             String zkPath = this.PATH_Factory + "/" + uuid + "$";
@@ -183,6 +185,7 @@ public class ScheduleStrategyDataManager4ZK {
                 // 把不满足IPList规则的从zk服务器上删除相应的节点，并记录到返回值List集合里
                 String zkPath = this.PATH_Strategy + "/" + scheduleStrategy.getStrategyName() + "/" + managerFactory.getUuid();
                 if (this.getZooKeeper().exists(zkPath, false) != null) {
+                    logger.info("删除不满足IPList规则的zk服务器，zkPath="+zkPath);
                     ZKTools.deleteTree(this.getZooKeeper(), zkPath);
                     result.add(scheduleStrategy.getStrategyName());
                 }
@@ -237,7 +240,7 @@ public class ScheduleStrategyDataManager4ZK {
                 result.setStrategyName(strategyName);
                 result.setUuid(uuid);
                 result.setRequestNum(0);
-                result.setMessage("");
+                result.setMessage("init");
             }
         }
         return result;

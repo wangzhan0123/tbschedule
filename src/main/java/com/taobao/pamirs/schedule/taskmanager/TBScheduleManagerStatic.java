@@ -36,7 +36,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         scheduleTaskManager.clearExpireScheduleServer(this.scheduleServer.getTaskType(), this.taskTypeInfo.getJudgeDeadInterval());
         List<String> list = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), list)) {
-            //是第一次启动，先清楚所有的垃圾数据
+            //是第一次启动，先清除所有的垃圾数据
             log.debug(this.scheduleServer.getUuid() + ":" + list.size());
             this.scheduleTaskManager.initialRunningInfo4Static(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getOwnSign(), this.scheduleServer.getUuid());
         }
@@ -193,17 +193,17 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
 
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList) == false) {
             if (log.isDebugEnabled()) {
-                log.debug(this.scheduleServer.getUuid() + ":不是负责任务分配("+this.scheduleServer.getTaskType()+")的Leader,直接返回");
+                log.debug("scheduleServer("+this.scheduleServer.getUuid() + "):不是负责任务分配("+this.scheduleServer.getTaskType()+")的Leader,直接返回");
             }
             return;
         }
 
         //设置初始化成功标准，避免在leader转换的时候，新增的线程组初始化失败
 
-        //在taskItem节点的data信息里记录当前Leader信息
+        //1.在taskItem节点的data信息里记录当前Leader信息
         scheduleTaskManager.setInitialRunningInfoSucuss(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
 
-        //检查每个任务项的处理机器cur_server，是否还处于存活状态，不存活则擦除掉
+        //2.检查每个任务项的处理机器cur_server，是否还处于存活状态，不存活则擦除掉
         scheduleTaskManager.clearTaskItem(this.scheduleServer.getTaskType(), serverList);
         scheduleTaskManager.assignTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid(), this.taskTypeInfo.getMaxTaskItemsOfOneThreadGroup(), serverList);
     }

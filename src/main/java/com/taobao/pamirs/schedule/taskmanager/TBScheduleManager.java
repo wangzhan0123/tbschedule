@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract class TBScheduleManager implements IStrategyTask {
-    private static transient Logger log = LoggerFactory.getLogger(TBScheduleManager.class);
+    private static transient Logger logger = LoggerFactory.getLogger(TBScheduleManager.class);
     /**
      * 用户标识不同线程的序号
      */
@@ -115,9 +115,10 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.threadGroupNumber = serialNumber();
         this.scheduleTaskManager = scheduleTaskManager;
         this.taskTypeInfo = this.scheduleTaskManager.loadTaskTypeBaseInfo(baseTaskType);
-        log.info("create TBScheduleManager for taskType:" + baseTaskType);
-        //清除已经过期1天的TASK,OWN_SIGN的组合。超过一天没有活动server的视为过期
-        this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期ownSign信息", this.taskTypeInfo.getExpireOwnSignInterval());
+        logger.info("create TBScheduleManager for taskType:" + baseTaskType);
+        //清除已经过期1天的TASK,OWN_SIGN的组合。超过一天没有活动的server视为过期
+        //this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, ScheduleUtil.getLocalIP() + "清除过期server", this.taskTypeInfo.getExpireOwnSignInterval());
+        this.scheduleTaskManager.clearExpireTaskTypeRunningInfo(baseTaskType, "", this.taskTypeInfo.getExpireOwnSignInterval());
 
         Object dealBean = factory.getBean(this.taskTypeInfo.getDealBeanName());
         if (dealBean == null) {
@@ -129,14 +130,14 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.taskDealBean = (IScheduleTaskDeal) dealBean;
 
         if (this.taskTypeInfo.getJudgeDeadInterval() < this.taskTypeInfo.getHeartBeatRate() * 5) {
-            throw new Exception("数据配置存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：judgeDeadInterval = "
-                    + this.taskTypeInfo.getJudgeDeadInterval()
-                    + ",heartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
+            throw new Exception("数据配置["+taskTypeInfo.getBaseTaskType()+"]存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：" +
+                    "judgeDeadInterval = " + this.taskTypeInfo.getJudgeDeadInterval() +
+                    ",heartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
         }
         this.scheduleServer = ScheduleServer.createScheduleServer(this.scheduleTaskManager, baseTaskType, ownSign, this.taskTypeInfo.getThreadNumber());
         this.scheduleServer.setManagerFactoryUUID(this.factory.getUuid()); //给currenScheduleServer追加赋值 factoryUuid
         this.scheduleTaskManager.registerScheduleServer(this.scheduleServer);
-//        this.mBeanName = "pamirs:name=" + "schedule.ServerMananger." + this.scheduleServer.getUuid();
+//        this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeat");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
@@ -194,8 +195,8 @@ abstract class TBScheduleManager implements IStrategyTask {
         registerLock.lock();
         try {
             if (this.isStopSchedule == true) {
-                if (log.isDebugEnabled()) {
-                    log.debug("外部命令终止调度,不在注册调度服务，避免遗留垃圾数据：" + scheduleServer.getUuid());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("外部命令终止调度,不在注册调度服务，避免遗留垃圾数据：" + scheduleServer.getUuid());
                 }
                 return;
             }
@@ -236,8 +237,7 @@ abstract class TBScheduleManager implements IStrategyTask {
             Date current = new Date(this.scheduleTaskManager.getSystemTime());
             Date firstStartTime = cexpStart.getNextValidTimeAfter(current);
             this.heartBeatTimer.schedule(
-                    new PauseOrResumeScheduleTask(this, this.heartBeatTimer,
-                            PauseOrResumeScheduleTask.TYPE_RESUME, tmpStr),
+                    new PauseOrResumeScheduleTask(this, this.heartBeatTimer, PauseOrResumeScheduleTask.TYPE_RESUME, tmpStr),
                     firstStartTime);
             this.scheduleServer.setNextRunStartTime(ScheduleUtil.transferDataToString(firstStartTime));
             if (this.taskTypeInfo.getPermitRunEndTime() == null
@@ -259,7 +259,7 @@ abstract class TBScheduleManager implements IStrategyTask {
                             firstEndTime);
                     this.scheduleServer.setNextRunEndTime(ScheduleUtil.transferDataToString(firstEndTime));
                 } catch (Exception e) {
-                    log.error("计算第一次执行时间出现异常:" + scheduleServer.getUuid(), e);
+                    logger.error("计算第一次执行时间出现异常:" + scheduleServer.getUuid(), e);
                     throw new Exception("计算第一次执行时间出现异常:" + scheduleServer.getUuid(), e);
                 }
             }
@@ -306,8 +306,8 @@ abstract class TBScheduleManager implements IStrategyTask {
         if (this.isPauseSchedule == false) {
             this.isPauseSchedule = true;
             this.pauseMessage = message;
-            if (log.isDebugEnabled()) {
-                log.debug("暂停调度 ：" + this.scheduleServer.getUuid() + ":" + this.statisticsInfo.getDealDescription());
+            if (logger.isDebugEnabled()) {
+                logger.debug("暂停调度 ：" + this.scheduleServer.getUuid() + ":" + this.statisticsInfo.getDealDescription());
             }
             if (this.processor != null) {
                 this.processor.stopSchedule();
@@ -322,8 +322,8 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     public void resume(String message) throws Exception {
         if (this.isPauseSchedule == true) {
-            if (log.isDebugEnabled()) {
-                log.debug("恢复调度:" + this.scheduleServer.getUuid());
+            if (logger.isDebugEnabled()) {
+                logger.debug("恢复调度:" + this.scheduleServer.getUuid());
             }
             this.isPauseSchedule = false;
             this.pauseMessage = message;
@@ -350,8 +350,8 @@ abstract class TBScheduleManager implements IStrategyTask {
      * @throws Exception
      */
     public void stop(String strategyName) throws Exception {
-        if (log.isInfoEnabled()) {
-            log.info("停止服务器 ：" + this.scheduleServer.getUuid());
+        if (logger.isInfoEnabled()) {
+            logger.info("停止服务器 ：" + this.scheduleServer.getUuid());
         }
         this.isPauseSchedule = false;
         if (this.processor != null) {
@@ -375,8 +375,8 @@ abstract class TBScheduleManager implements IStrategyTask {
                 // 是暂停调度，不注销Manager自己
                 return;
             }
-            if (log.isDebugEnabled()) {
-                log.debug("注销服务器 ：" + this.scheduleServer.getUuid());
+            if (logger.isDebugEnabled()) {
+                logger.debug("注销服务器 ：" + this.scheduleServer.getUuid());
             }
             this.isStopSchedule = true;
             // 取消心跳TIMER
@@ -415,8 +415,7 @@ abstract class TBScheduleManager implements IStrategyTask {
 }
 
 class HeartBeatTimerTask extends java.util.TimerTask {
-    private static transient Logger log = LoggerFactory
-            .getLogger(HeartBeatTimerTask.class);
+    private static transient Logger log = LoggerFactory.getLogger(HeartBeatTimerTask.class);
     TBScheduleManager manager;
 
     public HeartBeatTimerTask(TBScheduleManager aManager) {
@@ -428,7 +427,7 @@ class HeartBeatTimerTask extends java.util.TimerTask {
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
             manager.refreshScheduleServerInfo();
         } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+            log.error("HeartBeatTimerTask出现异常", ex);
         }
     }
 }

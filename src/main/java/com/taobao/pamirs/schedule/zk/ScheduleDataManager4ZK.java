@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ScheduleDataManager4ZK implements IScheduleDataManager {
-    private static transient Logger log = LoggerFactory.getLogger(ScheduleDataManager4ZK.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScheduleDataManager4ZK.class);
     private Gson gson;
     private ZKManager zkManager;
     private String PATH_BaseTaskType;
@@ -45,7 +45,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         zkBaseTime = tempStat.getCtime();
         ZKTools.deleteTree(getZooKeeper(), tempPath);
         if (Math.abs(this.zkBaseTime - this.loclaBaseTime) > 5000) {
-            log.error("请注意，Zookeeper服务器时间与本地应用程序服务器时间相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
+            logger.error("请注意，Zookeeper服务器时间与本地应用程序服务器时间相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
         }
     }
 
@@ -98,13 +98,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //清除所有的老信息，只有leader能执行此操作
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
         try {
-            log.info("删除所有taskItem子节点信息zkPath="+zkPath);
+            logger.info("删除所有taskItem子节点信息zkPath=" + zkPath);
             ZKTools.deleteTree(this.getZooKeeper(), zkPath);
         } catch (Exception e) {
             //需要处理zookeeper session过期异常
             if (e instanceof KeeperException
                     && ((KeeperException) e).code().intValue() == KeeperException.Code.SESSIONEXPIRED.intValue()) {
-                log.warn("delete : zookeeper session已经过期，需要重新连接zookeeper");
+                logger.warn("delete : zookeeper session已经过期，需要重新连接zookeeper");
                 zkManager.reConnection();
                 ZKTools.deleteTree(this.getZooKeeper(), zkPath);
             }
@@ -117,6 +117,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         setInitialRunningInfoSucuss(baseTaskType, taskType, uuid);
     }
 
+    /**
+     * 在taskItem节点的data信息里记录当前Leader信息
+     * @param baseTaskType
+     * @param taskType
+     * @param uuid
+     * @throws Exception
+     */
     public void setInitialRunningInfoSucuss(String baseTaskType, String taskType, String uuid) throws Exception {
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
         this.getZooKeeper().setData(zkPath, uuid.getBytes(), -1);
@@ -442,7 +449,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
 
-        log.debug(taskType + " current uid=" + uuid + " , zk  reloadDealTaskItem");
+        logger.debug(taskType + " current uid=" + uuid + " , zk  reloadDealTaskItem");
 
         List<TaskItemDefine> result = new ArrayList<TaskItemDefine>();
         for (String name : taskItems) {
@@ -458,9 +465,9 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
 
 
             } else if (value != null && uuid.equals(new String(value)) == false) {
-                log.trace(" current uid=" + uuid + " , zk cur_server uid=" + new String(value));
+                logger.trace(" current uid=" + uuid + " , zk cur_server uid=" + new String(value));
             } else {
-                log.trace(" current uid=" + uuid);
+                logger.trace(" current uid=" + uuid);
             }
         }
         return result;
@@ -492,17 +499,25 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         return this.getZooKeeper().getChildren(zkPath, false).size();
     }
 
+    /**
+     *
+     * @param baseTaskType
+     * @param serverUUID TODO：这个参数目前没有用到，后期删除掉
+     * @param expireDateInternal 过期时间，以天为单位
+     * @throws Exception
+     */
     public void clearExpireTaskTypeRunningInfo(String baseTaskType, String serverUUID, double expireDateInternal) throws Exception {
         //这里为什么会是list呢，就是为了区分环境信息，比如开发环境与测试环境
-        //TODO:但是目前我们的管理平台仅支持一种开发环境
-        List<String> taskNameTypeList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
+        //TODO:但是目前我们的管理平台仅支持一种环境的
+        List<String> taskTypeList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
 
-        for (String taskNameType : taskNameTypeList) {
-            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskNameType + "/" + this.PATH_TaskItem;
+        for (String taskType : taskTypeList) {
+            String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
             Stat stat = this.getZooKeeper().exists(zkPath, false);
+            //这里检测的是每个任务的taskItem节点最后修改时间mtime
             if (stat == null || getSystemTime() - stat.getMtime() > (long) (expireDateInternal * 24 * 3600 * 1000)) {
-                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskNameType;
-                log.info("检测zkPath("+zkPath+")节点，最后修改时间超过了("+expireDateInternal+")天，所以即将删除节点："+tmpPath);
+                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType;
+                logger.info("检测zkPath(" + zkPath + ")节点，最后修改时间超过了(" + expireDateInternal + ")天，所以即将删除节点：" + tmpPath);
                 ZKTools.deleteTree(this.getZooKeeper(), tmpPath);
             }
         }
@@ -528,12 +543,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
             this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT);
         }
-        for (String scheduleServerList : this.getZooKeeper().getChildren(zkPath, false)) {
+        for (String scheduleServer : this.getZooKeeper().getChildren(zkPath, false)) {
             try {
-                Stat stat = this.getZooKeeper().exists(zkPath + "/" + scheduleServerList, false);
+                Stat stat = this.getZooKeeper().exists(zkPath + "/" + scheduleServer, false);
                 if (getSystemTime() - stat.getMtime() > expireTime) {
-                    log.info("清除过期的scheduleServer="+zkPath+ "/" + scheduleServerList);
-                    ZKTools.deleteTree(this.getZooKeeper(), zkPath + "/" + scheduleServerList);
+                    logger.info("清除过期的scheduleServer=" + zkPath + "/" + scheduleServer);
+                    ZKTools.deleteTree(this.getZooKeeper(), zkPath + "/" + scheduleServer);
                     result++;
                 }
             } catch (Exception e) {
@@ -626,7 +641,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
                 server.setCenterServerTime(new Timestamp(this.getSystemTime()));
                 result.add(server);
             } catch (Exception e) {
-                log.debug(e.getMessage(), e);
+                logger.debug(e.getMessage(), e);
             }
         }
         return result;
@@ -688,13 +703,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     public void assignTaskItem(String taskType, String currentUuid, int maxNumOfOneServer,
                                List<String> taskServerList) throws Exception {
         if (this.isLeader(currentUuid, taskServerList) == false) {
-            if (log.isDebugEnabled()) {
-                log.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
+            if (logger.isDebugEnabled()) {
+                logger.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
             }
             return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug(currentUuid + ":开始重新分配任务......");
+        if (logger.isDebugEnabled()) {
+            logger.debug(currentUuid + ":开始重新分配任务......");
         }
         if (taskServerList.size() <= 0) {
             //在服务器动态调整的时候，可能出现服务器列表为空的清空
@@ -753,28 +768,28 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
 
         if (unModifyCount < taskItemIdList.size()) { //设置需要所有的服务器重新装载任务
-            log.info("设置需要所有的服务器重新装载任务:updateReloadTaskItemFlag......" + taskType + "  ,currentUuid " + currentUuid);
+            logger.info("设置需要所有的服务器重新装载任务:updateReloadTaskItemFlag......" + taskType + "  ,currentUuid " + currentUuid);
             this.updateReloadTaskItemFlag(taskType);
         }
-        if (log.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             StringBuffer buffer = new StringBuffer();
             for (ScheduleTaskItem taskItem : this.loadAllTaskItem(taskType)) {
                 buffer.append("\n").append(taskItem.toString());
             }
-            log.debug(buffer.toString());
+            logger.debug(buffer.toString());
         }
     }
 
     public void assignTaskItem22(String taskType, String currentUuid,
                                  List<String> serverList) throws Exception {
         if (this.isLeader(currentUuid, serverList) == false) {
-            if (log.isDebugEnabled()) {
-                log.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
+            if (logger.isDebugEnabled()) {
+                logger.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
             }
             return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug(currentUuid + ":开始重新分配任务......");
+        if (logger.isDebugEnabled()) {
+            logger.debug(currentUuid + ":开始重新分配任务......");
         }
         if (serverList.size() <= 0) {
             //在服务器动态调整的时候，可能出现服务器列表为空的清空
@@ -822,12 +837,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         if (unModifyCount < children.size()) { //设置需要所有的服务器重新装载任务
             this.updateReloadTaskItemFlag(taskType);
         }
-        if (log.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             StringBuffer buffer = new StringBuffer();
             for (ScheduleTaskItem taskItem : this.loadAllTaskItem(taskType)) {
                 buffer.append("\n").append(taskItem.toString());
             }
-            log.debug(buffer.toString());
+            logger.debug(buffer.toString());
         }
     }
 
@@ -900,6 +915,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server + "/" + serverUUID;
         if (this.getZooKeeper().exists(zkPath, false) != null) {
+            logger.info("删除服务器zkPath="+zkPath);
             this.getZooKeeper().delete(zkPath, -1);
         }
     }

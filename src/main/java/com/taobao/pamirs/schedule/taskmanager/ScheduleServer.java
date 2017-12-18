@@ -16,6 +16,7 @@ public class ScheduleServer {
     /**  全局唯一编号  */
     private String uuid;
     private long id;
+    private String managerFactoryUUID;
 
     /**  原始任务类型  */
     //TODO:建议更名为taskName
@@ -40,12 +41,6 @@ public class ScheduleServer {
     /**  最后一次取数据时间  */
     private Timestamp lastFetchDataTime;
 
-    /**
-     * 处理描述信息，例如读取的任务数量，处理成功的任务数量，处理失败的数量，处理耗时
-     * FetchDataCount=4430,FetcheDataNum=438570,DealDataSucess=438570,DealDataFail=0,DealSpendTime=651066
-     */
-    private String dealInfoDesc;
-
     private String nextRunStartTime;
 
     private String nextRunEndTime;
@@ -56,8 +51,11 @@ public class ScheduleServer {
     private long version;
 
     private boolean isRegister;
-
-    private String managerFactoryUUID;
+    /**
+     * 处理描述信息，例如读取的任务数量，处理成功的任务数量，处理失败的数量，处理耗时
+     * FetchDataCount=4430,FetcheDataNum=438570,DealDataSucess=438570,DealDataFail=0,DealSpendTime=651066
+     */
+    private String dealInfoDesc;
 
     public ScheduleServer() {
 

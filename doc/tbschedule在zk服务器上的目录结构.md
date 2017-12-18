@@ -3,19 +3,44 @@
 zk服务器间集群机制，以及节点数据变化如何通知到其它节点
 应用服务器间集群机制
 
---------------------------------------------------------------------------------
-tbschedlue在zk服务器上的目录结构
+-----------------------------------------------------------------------------------------------------------------
+tbschedlue在zk服务器上的目录结构说明
 $rootpath --根目录( CreateMode.PERSISTENT )
-    appname1 --应用名称( CreateMode.PERSISTENT )
-        strategy --任务概要配置目录( CreateMode.PERSISTENT )
+    appname1   --应用名称( CreateMode.PERSISTENT )
+        strategy     --任务概要配置目录( CreateMode.PERSISTENT )
+            scanPushTaskSchedule_STRATEGY ( CreateMode.PERSISTENT )
+                10.190.18.240$host-10-190-18-240$323E9C8F1CDB48D58548A2F2FB7E2145$0000000463  ( CreateMode.EPHEMERAL_SEQUENTIAL )
+                10.190.17.166$host-10-190-17-166$788EC68CA9C04298A78DF82A3B3B7222$0000000458  ( CreateMode.EPHEMERAL_SEQUENTIAL )
+            scanWechatActivityMsgSchedule_STRATEGY
+                ……
+            ……
         baseTaskType --任务详情配置目录( CreateMode.PERSISTENT )
-        factory --这个应用的全部服务器目录( CreateMode.PERSISTENT )
+            scanApprovalStatusSchedule_TASK ( CreateMode.PERSISTENT )
+                scanApprovalStatusSchedule_TASK ( CreateMode.PERSISTENT )
+                    taskItem ( CreateMode.PERSISTENT )
+                        0 ( CreateMode.PERSISTENT )
+                        1 ( CreateMode.PERSISTENT )
+                        2 ( CreateMode.PERSISTENT )
+                        3 ( CreateMode.PERSISTENT )
+                        4 ( CreateMode.PERSISTENT )
+                        ……
+                    server   ( CreateMode.PERSISTENT )
+                        scanPushTaskSchedule_TASK$10.191.33.64$7D59B7AFA95C40FABCD78C0D6C0C2672$0000000035   ( CreateMode.EPHEMERAL_SEQUENTIAL )
+                        scanPushTaskSchedule_TASK$10.187.58.131$668116D0699F44DEB008B32FDAB25469$0000000037  ( CreateMode.EPHEMERAL_SEQUENTIAL )
+            ……
+        factory      --这个应用的全部服务器目录( CreateMode.PERSISTENT )
+            10.190.18.240$host-10-190-18-240$323E9C8F1CDB48D58548A2F2FB7E2145$0000000463  ( CreateMode.EPHEMERAL_SEQUENTIAL )
+            10.187.82.71$host-10-187-82-71$BFFAD85238BF48F1AA443F2FB4AF4CBD$0000000474    ( CreateMode.EPHEMERAL_SEQUENTIAL )
+            ……
     appname2 --应用名称
-        strategy --任务概要配置目录
+        strategy     --任务概要配置目录
         baseTaskType --任务详情配置目录
-        factory --这个应用的全部服务器目录
+        factory      --这个应用的全部服务器目录
     ……
---------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------
+下面分别来讲讲上面提到的3个最重要的目录
+-----------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------
 strategy
     scanPushTaskSchedule_STRATEGY ->【taskName-任务名称,IPList-允许参与处理任务的服务器,assignNum-线程组数量,numOfSingleServer-单JVM允许最大线程组数量,
            taskParameter-任务参数，sts-(值可为resume,pause)】

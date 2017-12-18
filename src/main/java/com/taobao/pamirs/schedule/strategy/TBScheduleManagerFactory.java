@@ -155,7 +155,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                 result.initialTaskParameter(strategy.getStrategyName(), strategy.getTaskParameter());
             }
         } catch (Exception e) {
-            logger.error("strategy 获取对应的java or bean 出错,schedule并没有加载该任务,请确认" + strategy.getStrategyName(), e);
+            logger.error("strategy获取对应的java or bean 出错,schedule并没有加载该任务,请确认" + strategy.getStrategyName(), e);
         }
         return result;
     }
@@ -191,6 +191,8 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             } else {
                 reRegisterManagerFactory();
             }
+        } catch (Exception e) {
+            logger.error("执行refresh方法时异常",e);
         } finally {
             this.lock.unlock();
         }
@@ -272,9 +274,9 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     public void reRunScheduleServer() throws Exception {
         //获得这个uuid所在机器能够参与的所有任务列表
-        List<ScheduleStrategyRunntime> cheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
+        List<ScheduleStrategyRunntime> scheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
 
-        for (ScheduleStrategyRunntime run : cheduleStrategyRunntimeList) {
+        for (ScheduleStrategyRunntime run : scheduleStrategyRunntimeList) {
             List<IStrategyTask> list = this.managerMap.get(run.getStrategyName());
             if (list == null) {
                 list = new ArrayList<IStrategyTask>();
@@ -290,7 +292,6 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             }
             //不足，增加调度器
             ScheduleStrategy strategy = this.scheduleStrategyManager.loadStrategy(run.getStrategyName());
-
             // requestNumr=0(Leader尚未给其分配任务项 或 Leader 分配时发现不需要这台机器来处理)时,下面where直接结束,等待下一个2秒 再次factory.refresh()
             // requestNumr=1(Leader 分配了1个任务项给这台机器来处理)时,将执行 this.createStrategyTask(strategy);
             while (list.size() < run.getRequestNum()) {

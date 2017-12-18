@@ -67,8 +67,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
      * @param aStatisticsInfo
      * @throws Exception
      */
-    public TBScheduleProcessorSleep(TBScheduleManager aManager,
-                                    IScheduleTaskDeal<T> aTaskDealBean, StatisticsInfo aStatisticsInfo) throws Exception {
+    public TBScheduleProcessorSleep(TBScheduleManager aManager, IScheduleTaskDeal<T> aTaskDealBean, StatisticsInfo aStatisticsInfo) throws Exception {
         this.scheduleManager = aManager;
         this.statisticsInfo = aStatisticsInfo;
         this.taskTypeInfo = this.scheduleManager.getTaskTypeInfo();
@@ -82,7 +81,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
             isMutilTask = true;
         }
         if (taskTypeInfo.getFetchDataNumber() < taskTypeInfo.getThreadNumber() * 10) {
-            logger.warn("参数设置不合理，系统性能不佳。【每次从数据库获取的数量fetchnum】 >= 【线程数量threadnum】 *【最少循环次数10】 ");
+            logger.warn("参数设置不合理，系统性能不佳。【每次从数据库获取的数量fetchDataNumber】 >= 【线程数量threadNumber】 *【最少循环次数10】 ");
         }
         for (int i = 0; i < taskTypeInfo.getThreadNumber(); i++) {
             this.startThread(i);
