@@ -197,9 +197,13 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
             }
             return;
         }
+
         //设置初始化成功标准，避免在leader转换的时候，新增的线程组初始化失败
+
         //在taskItem节点的data信息里记录当前Leader信息
         scheduleTaskManager.setInitialRunningInfoSucuss(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
+
+        //检查每个任务项的处理机器cur_server，是否还处于存活状态，不存活则擦除掉
         scheduleTaskManager.clearTaskItem(this.scheduleServer.getTaskType(), serverList);
         scheduleTaskManager.assignTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid(), this.taskTypeInfo.getMaxTaskItemsOfOneThreadGroup(), serverList);
     }
@@ -273,12 +277,12 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                 buf.append(this.scheduleServer.getUuid());
                 buf.append("[TASK_TYPE=");
                 buf.append(this.scheduleServer.getTaskType());
-                buf.append("]自启动以来，超过20个心跳周期，还 没有获取到分配的任务队列;");
+                buf.append("]自启动以来，超过20个心跳周期，还没有获取到分配的任务队列;");
                 buf.append("  currentTaskItemList.size() =" + currentTaskItemList.size());
                 buf.append(" ,scheduleTaskManager.getSystemTime()=" + scheduleTaskManager.getSystemTime());
                 buf.append(" ,lastReloadTaskItemListTime=" + lastReloadTaskItemListTime);
                 buf.append(" ,taskTypeInfo.getHeartBeatRate()=" + taskTypeInfo.getHeartBeatRate() * 10);
-                log.warn(buf.toString());
+                log.error(buf.toString());
             }
 
             if (this.currentTaskItemList.size() > 0) {

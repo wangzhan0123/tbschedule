@@ -135,6 +135,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         return false;
     }
 
+    /**
+     * 更新节点$rootPath/baseTaskType/$baseTaskType/$taskType/server的数据data["reload=true"]
+     *
+     * @param taskType
+     * @return
+     * @throws Exception
+     */
     public long updateReloadTaskItemFlag(String taskType) throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType
@@ -537,6 +544,14 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         return result;
     }
 
+    /**
+     * 检查每个任务项的处理机器cur_server，是否还处于存活状态，不存活则擦除掉
+     *
+     * @param taskType
+     * @param serverList
+     * @return
+     * @throws Exception
+     */
     @Override
     public int clearTaskItem(String taskType, List<String> serverList) throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
@@ -687,10 +702,10 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
-        List<String> children = this.getZooKeeper().getChildren(zkPath, false);
-//		 Collections.sort(children);
+        List<String> taskItemIdList = this.getZooKeeper().getChildren(zkPath, false);
+//		 Collections.sort(taskItemIdList);
 //	     20150323 有些任务分片，业务方其实是用数字的字符串排序的。优先以数字进行排序，否则以字符串排序
-        Collections.sort(children, new Comparator<String>() {
+        Collections.sort(taskItemIdList, new Comparator<String>() {
             public int compare(String u1, String u2) {
                 if (StringUtils.isNumeric(u1) && StringUtils.isNumeric(u2)) {
                     int iU1 = Integer.parseInt(u1);
@@ -708,12 +723,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
         int unModifyCount = 0;
-        int[] taskNums = ScheduleUtil.assignTaskNumber(taskServerList.size(), children.size(), maxNumOfOneServer);
+        int[] taskNums = ScheduleUtil.assignTaskNumber(taskServerList.size(), taskItemIdList.size(), maxNumOfOneServer);
         int point = 0;
         int count = 0;
         String NO_SERVER_DEAL = "没有分配到服务器";
-        for (int i = 0; i < children.size(); i++) {
-            String name = children.get(i);
+        for (int i = 0; i < taskItemIdList.size(); i++) {
+            String taskItemId = taskItemIdList.get(i);
             if (point < taskServerList.size() && i >= count + taskNums[point]) {
                 count = count + taskNums[point];
                 point = point + 1;
@@ -722,23 +737,23 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             if (point < taskServerList.size()) {
                 serverName = taskServerList.get(point);
             }
-            byte[] curServerValue = this.getZooKeeper().getData(zkPath + "/" + name + "/cur_server", false, null);
-            byte[] reqServerValue = this.getZooKeeper().getData(zkPath + "/" + name + "/req_server", false, null);
+            byte[] curServerValue = this.getZooKeeper().getData(zkPath + "/" + taskItemId + "/cur_server", false, null);
+            byte[] reqServerValue = this.getZooKeeper().getData(zkPath + "/" + taskItemId + "/req_server", false, null);
 
             if (curServerValue == null || new String(curServerValue).equals(NO_SERVER_DEAL)) {
-                this.getZooKeeper().setData(zkPath + "/" + name + "/cur_server", serverName.getBytes(), -1);
-                this.getZooKeeper().setData(zkPath + "/" + name + "/req_server", null, -1);
+                this.getZooKeeper().setData(zkPath + "/" + taskItemId + "/cur_server", serverName.getBytes(), -1);
+                this.getZooKeeper().setData(zkPath + "/" + taskItemId + "/req_server", null, -1);
             } else if (new String(curServerValue).equals(serverName) == true && reqServerValue == null) {
                 //不需要做任何事情
                 unModifyCount = unModifyCount + 1;
             } else {
-                this.getZooKeeper().setData(zkPath + "/" + name + "/req_server", serverName.getBytes(), -1);
+                //代码块走到这里表明进行了任务项转移
+                this.getZooKeeper().setData(zkPath + "/" + taskItemId + "/req_server", serverName.getBytes(), -1);
             }
         }
 
-        if (unModifyCount < children.size()) { //设置需要所有的服务器重新装载任务
+        if (unModifyCount < taskItemIdList.size()) { //设置需要所有的服务器重新装载任务
             log.info("设置需要所有的服务器重新装载任务:updateReloadTaskItemFlag......" + taskType + "  ,currentUuid " + currentUuid);
-
             this.updateReloadTaskItemFlag(taskType);
         }
         if (log.isDebugEnabled()) {
@@ -830,10 +845,10 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
 
         //之前在ScheduleServer.createScheduleServer方法中已经给uuid赋值过了，这里相当于不用上一次的赋值了,why,
-        //因为这个方法registerScheduleServer，会在heartBeatTimer里可能会重复调用
+        //因为这个方法registerScheduleServer，在heartBeatTimer[HeartBeatTimerTask]里可能会重复调用
         //此处必须增加UUID作为唯一性保障
-       String zkServerPath = zkPath + "/" + server.getTaskType() + "$" + server.getIp() + "$"
-                           + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
+       String zkServerPath = zkPath + "/" + server.getTaskType() +
+               "$" + server.getIp() + "$"+ (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
 //        String zkServerPath = zkPath + "/" + server.getUuid();
         String realPath = this.getZooKeeper().create(zkServerPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT_SEQUENTIAL);
         //这里的uuid实际上是uuid+自增序列号
@@ -849,6 +864,13 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         server.setRegister(true);
     }
 
+    /**
+     * 仅更新server的heartBeatTime，version两个字段
+     *
+     * @param server
+     * @return
+     * @throws Exception
+     */
     public boolean refreshScheduleServer(ScheduleServer server) throws Exception {
         Timestamp heartBeatTime = new Timestamp(this.getSystemTime());
         String zkPath = this.PATH_BaseTaskType + "/" + server.getBaseTaskType() + "/" + server.getTaskType()

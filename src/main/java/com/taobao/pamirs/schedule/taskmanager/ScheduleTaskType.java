@@ -275,10 +275,12 @@ public class ScheduleTaskType implements java.io.Serializable {
         return taskParameter;
     }
 
+    @Deprecated
     public int getMaxTaskItemsOfOneThreadGroup() {
         return maxTaskItemsOfOneThreadGroup;
     }
 
+    @Deprecated
     public void setMaxTaskItemsOfOneThreadGroup(int maxTaskItemsOfOneThreadGroup) {
         this.maxTaskItemsOfOneThreadGroup = maxTaskItemsOfOneThreadGroup;
     }
