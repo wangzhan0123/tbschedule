@@ -138,7 +138,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.scheduleServer.setManagerFactoryUUID(this.factory.getUuid()); //给currenScheduleServer追加赋值 factoryUuid
         this.scheduleTaskManager.registerScheduleServer(this.scheduleServer);
 //        this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
-        this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeat");
+        this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-tasktimer");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
     }

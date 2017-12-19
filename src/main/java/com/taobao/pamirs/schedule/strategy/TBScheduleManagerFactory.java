@@ -121,7 +121,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             // 注册调度管理器
             this.scheduleStrategyManager.registerManagerFactory(this);
             if (timer == null) {
-                timer = new Timer("TBScheduleManagerFactory-Timer");
+                timer = new Timer("TBScheduleManagerFactory-factorytimer");
             }
             if (timerTask == null) {
                 timerTask = new ManagerFactoryTimerTask(this);
@@ -155,7 +155,9 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                 result.initialTaskParameter(strategy.getStrategyName(), strategy.getTaskParameter());
             }
         } catch (Exception e) {
-            logger.error("strategy获取对应的java or bean 出错,schedule并没有加载该任务,请确认" + strategy.getStrategyName(), e);
+            //lzc modified 20171219,
+            //相对于3.2.14版本，这里增加了try catch块，是为了防止个别任务出现异常造成后续任务不能正常被加载的情况
+            logger.error("strategy获取对应的javabean出错,schedule并没有加载该任务,请确认" + strategy.getStrategyName(), e);
         }
         return result;
     }
@@ -235,14 +237,14 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
             //参数含义：实际机器数量，分配的线程组数量(1项任务分配给多少个团队来执行)，分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
             //lzc 20171224:上面第3个参数（分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)）,已作废
-            //举例说明， 8，8，0 => taskItemNums=[1,1,1,1,1,1,1,1 ]
-            //举例说明， 4，8，0 => taskItemNums=[2,2,2,2 ]
-            //举例说明， 3，8，0 => taskItemNums=[3,3,2 ]
-            int[] taskItemNums = ScheduleUtil.assignTaskNumber(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
+            //举例说明， 8，8，0 => assignNumByOneServerArr=[1,1,1,1,1,1,1,1 ]
+            //举例说明， 4，8，0 => assignNumByOneServerArr=[2,2,2,2 ]
+            //举例说明， 3，8，0 => assignNumByOneServerArr=[3,3,2 ]
+            int[] assignNumByOneServerArr = ScheduleUtil.assignTaskNumber(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
             for (int i = 0; i < factoryList.size(); i++) {
                 ScheduleStrategyRunntime factory = factoryList.get(i);
-                //更新请求的服务器数量
-                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(scheduleStrategyRunntime.getStrategyName(), factory.getUuid(), taskItemNums[i]);
+                //更新每台服务器处理分配的线程组数量
+                this.scheduleStrategyManager.updateStrategyRunntimeReqestNum(scheduleStrategyRunntime.getStrategyName(), factory.getUuid(), assignNumByOneServerArr[i]);
             }
         }
     }

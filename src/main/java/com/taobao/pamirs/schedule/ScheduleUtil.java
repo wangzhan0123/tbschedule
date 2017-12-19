@@ -87,28 +87,28 @@ public class ScheduleUtil {
      * 计算每个机器被分配的任务项数量
      *
      * @param serverNum 总的服务器数量
-     * @param taskItemNum 分配的线程组数量(1项任务分配给多少个团队来执行)
+     * @param assignNum 分配的线程组数量(1项任务分配给多少个团队来执行)
      * @param @Deprecated numOfSingleServer 分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
      * @return
      */
-    public static int[] assignTaskNumber(int serverNum, int taskItemNum, int numOfSingleServer) {
-        int[] taskNums = new int[serverNum];
-        int numOfSingle = taskItemNum / serverNum;
-        int otherNum = taskItemNum % serverNum;
+    public static int[] assignTaskNumber(int serverNum, int assignNum, int numOfSingleServer) {
+        int[] assignNumByOneServerArr = new int[serverNum];
+        int numOfSingle = assignNum / serverNum;
+        int otherNum = assignNum % serverNum;
         //20150323 删除, 任务分片保证分配到所有的线程组数上。 开始
 //		if (numOfSingleServer >0 && numOfSingle >= numOfSingleServer) {
 //			numOfSingle = numOfSingleServer;
 //			otherNum = 0;
 //		}
         //20150323 删除, 任务分片保证分配到所有的线程组数上。 结束
-        for (int i = 0; i < taskNums.length; i++) {
+        for (int i = 0; i < assignNumByOneServerArr.length; i++) {
             if (i < otherNum) {
-                taskNums[i] = numOfSingle + 1;
+                assignNumByOneServerArr[i] = numOfSingle + 1;
             } else {
-                taskNums[i] = numOfSingle;
+                assignNumByOneServerArr[i] = numOfSingle;
             }
         }
-        return taskNums;
+        return assignNumByOneServerArr;
     }
 
     private static String printArray(int[] items) {

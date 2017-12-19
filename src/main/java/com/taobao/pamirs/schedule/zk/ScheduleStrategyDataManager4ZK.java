@@ -318,10 +318,10 @@ public class ScheduleStrategyDataManager4ZK {
      *
      * @param strategyName
      * @param uuid
-     * @param taskItemNum
+     * @param assignNumByOneServer
      * @throws Exception
      */
-    public void updateStrategyRunntimeReqestNum(String strategyName, String uuid, int taskItemNum) throws Exception {
+    public void updateStrategyRunntimeReqestNum(String strategyName, String uuid, int assignNumByOneServer) throws Exception {
         //ScheduleStrategyRunntime result = null;
         //if (this.getZooKeeper().exists(zkPath, false) != null) {
         //    result = this.loadScheduleStrategyRunntime(strategyName, uuid);
@@ -329,7 +329,7 @@ public class ScheduleStrategyDataManager4ZK {
         //    result = new ScheduleStrategyRunntime();
         //    result.setStrategyName(strategyName);
         //    result.setUuid(uuid);
-        //    result.setRequestNum(taskItemNum);
+        //    result.setRequestNum(assignNumByOneServer);
         //    result.setMessage("");
         //}
 
@@ -338,11 +338,11 @@ public class ScheduleStrategyDataManager4ZK {
             result = new ScheduleStrategyRunntime();
             result.setStrategyName(strategyName);
             result.setUuid(uuid);
-            result.setRequestNum(taskItemNum);
+            result.setRequestNum(assignNumByOneServer);
             result.setMessage("");
         }
 
-        result.setRequestNum(taskItemNum);
+        result.setRequestNum(assignNumByOneServer);
         String valueString = this.gson.toJson(result);
 
         String zkPath = this.PATH_Strategy + "/" + strategyName + "/" + uuid;
