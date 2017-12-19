@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public class TBScheduleManagerStatic extends TBScheduleManager {
-    private static transient Logger log = LoggerFactory.getLogger(TBScheduleManagerStatic.class);
+    private static transient Logger logger = LoggerFactory.getLogger(TBScheduleManagerStatic.class);
     /**
      * 总的任务数量
      */
@@ -37,7 +37,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         List<String> list = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), list)) {
             //是第一次启动，先清除所有的垃圾数据
-            log.debug(this.scheduleServer.getUuid() + ":" + list.size());
+            logger.debug(this.scheduleServer.getUuid() + ":" + list.size());
             this.scheduleTaskManager.initialRunningInfo4Static(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getOwnSign(), this.scheduleServer.getUuid());
         }
     }
@@ -47,13 +47,13 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
             @SuppressWarnings("static-access")
             public void run() {
                 try {
-                    log.info("开始获取调度任务队列...... of " + scheduleServer.getUuid());
+                    logger.info("开始获取调度任务队列...... of " + scheduleServer.getUuid());
                     while (isRuntimeInfoInitial == false) {
                         if (isStopSchedule == true) {
-                            log.debug("外部命令终止调度,退出调度队列获取：" + scheduleServer.getUuid());
+                            logger.debug("外部命令终止调度,退出调度队列获取：" + scheduleServer);
                             return;
                         }
-                        //log.error("isRuntimeInfoInitial = " + isRuntimeInfoInitial);
+                        //logger.error("isRuntimeInfoInitial = " + isRuntimeInfoInitial);
                         try {
                             initialRunningInfo();
                             isRuntimeInfoInitial = scheduleTaskManager.isInitialRunningInfoSucuss(
@@ -61,7 +61,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                                     scheduleServer.getOwnSign());
                         } catch (Throwable e) {
                             //忽略初始化的异常
-                            log.error(e.getMessage(), e);
+                            logger.error(e.getMessage(), e);
                         }
                         if (isRuntimeInfoInitial == false) {
                             Thread.currentThread().sleep(1000);
@@ -71,28 +71,28 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                     lastReloadTaskItemListTime = scheduleTaskManager.getSystemTime();
                     while (getCurrentScheduleTaskItemListNow().size() <= 0) {
                         if (isStopSchedule == true) {
-                            log.debug("外部命令终止调度,退出调度队列获取：" + scheduleServer.getUuid());
+                            logger.debug("外部命令终止调度,退出调度队列获取：" + scheduleServer);
                             return;
                         }
                         Thread.currentThread().sleep(1000);
                         count = count + 1;
-                        // log.error("尝试获取调度队列，第" + count + "次 ") ;
+                        // logger.error("尝试获取调度队列，第" + count + "次 ") ;
                     }
-                    String tmpStr = "TaskItemDefine:";
+                    String tmpStr = "";
                     for (int i = 0; i < currentTaskItemList.size(); i++) {
                         if (i > 0) {
                             tmpStr = tmpStr + ",";
                         }
                         tmpStr = tmpStr + currentTaskItemList.get(i);
                     }
-                    log.info("获取到任务处理队列，开始调度：" + tmpStr + "  of  " + scheduleServer.getUuid());
+                    logger.info("获取到任务处理队列，开始调度：" + tmpStr + "  of  " + scheduleServer);
 
                     //任务总量
                     taskItemCount = scheduleTaskManager.loadAllTaskItem(scheduleServer.getTaskType()).size();
                     //只有在已经获取到任务处理队列后才开始启动任务处理器
                     computerStart();
                 } catch (Exception e) {
-                    log.error(e.getMessage(), e);
+                    logger.error(e.getMessage(), e);
                     String str = e.getMessage();
                     if (str.length() > 300) {
                         str = str.substring(0, 300);
@@ -167,7 +167,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         for (String key : statMap.keySet()) {
             Stat s = statMap.get(key);
             if (this.scheduleTaskManager.getSystemTime() - s.getMtime() > this.taskTypeInfo.getHeartBeatRate() * 40) {
-                log.error("zombie serverList exists! serv=" + key + " ,type=" + type + "超过40次心跳周期未更新");
+                logger.error("zombie serverList exists! serv=" + key + " ,type=" + type + "超过40次心跳周期未更新");
                 exist = true;
             }
         }
@@ -192,8 +192,8 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         List<String> serverList = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
 
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList) == false) {
-            if (log.isDebugEnabled()) {
-                log.debug("scheduleServer("+this.scheduleServer.getUuid() + "):不是负责任务分配("+this.scheduleServer.getTaskType()+")的Leader,直接返回");
+            if (logger.isDebugEnabled()) {
+                logger.debug("scheduleServer("+this.scheduleServer.getUuid() + "):不是负责任务分配("+this.scheduleServer.getTaskType()+")的Leader,直接返回");
             }
             return;
         }
@@ -252,13 +252,11 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
             //server下面的机器节点的运行时环境是否在刷新，如果
             isExistZombieServ(this.scheduleServer.getTaskType(), statMap);
         } catch (Exception e) {
-            log.error("zombie serverList exists， Exception:", e);
+            logger.error("zombie serverList exists， Exception:", e);
         }
-//		
-
         //获取最新的版本号
         this.lastFetchVersion = this.scheduleTaskManager.getReloadTaskItemFlag(this.scheduleServer.getTaskType());
-        log.debug(" this.scheduleServer.getTaskType()=" + this.scheduleServer.getTaskType() + ",  need reload=" + isNeedReloadTaskItem);
+        logger.debug(" this.scheduleServer.getTaskType()=" + this.scheduleServer.getTaskType() + ",  need reload=" + isNeedReloadTaskItem);
         try {
             //是否被人申请的队列
             this.scheduleTaskManager.releaseDealTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
@@ -274,15 +272,14 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                             > this.taskTypeInfo.getHeartBeatRate() * 20) {
                 StringBuffer buf = new StringBuffer();
                 buf.append("调度服务器");
-                buf.append(this.scheduleServer.getUuid());
-                buf.append("[TASK_TYPE=");
-                buf.append(this.scheduleServer.getTaskType());
+                buf.append("[");
+                buf.append(this.scheduleServer.toString());
                 buf.append("]自启动以来，超过20个心跳周期，还没有获取到分配的任务队列;");
                 buf.append("  currentTaskItemList.size() =" + currentTaskItemList.size());
                 buf.append(" ,scheduleTaskManager.getSystemTime()=" + scheduleTaskManager.getSystemTime());
                 buf.append(" ,lastReloadTaskItemListTime=" + lastReloadTaskItemListTime);
                 buf.append(" ,taskTypeInfo.getHeartBeatRate()=" + taskTypeInfo.getHeartBeatRate() * 10);
-                log.error(buf.toString());
+                logger.error(buf.toString());
             }
 
             if (this.currentTaskItemList.size() > 0) {

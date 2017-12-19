@@ -1,6 +1,7 @@
 package com.taobao.pamirs.schedule.zk;
 
 import com.google.gson.*;
+import com.taobao.pamirs.schedule.DateTimeUtil;
 import com.taobao.pamirs.schedule.ScheduleUtil;
 import com.taobao.pamirs.schedule.TaskItemDefine;
 import com.taobao.pamirs.schedule.taskmanager.*;
@@ -41,11 +42,11 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
         loclaBaseTime = System.currentTimeMillis();
         String tempPath = this.zkManager.getZooKeeper().create(this.zkManager.getRootPath() + "/systime", null, this.zkManager.getAcl(), CreateMode.EPHEMERAL_SEQUENTIAL);
-         Stat tempStat = this.zkManager.getZooKeeper().exists(tempPath, false);
+        Stat tempStat = this.zkManager.getZooKeeper().exists(tempPath, false);
         zkBaseTime = tempStat.getCtime();
         ZKTools.deleteTree(getZooKeeper(), tempPath);
         if (Math.abs(this.zkBaseTime - this.loclaBaseTime) > 5000) {
-            logger.error("请注意，Zookeeper服务器时间与本地应用程序服务器时间相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
+            logger.error("请注意，Zookeeper服务器时间("+ DateTimeUtil.toDateTimeString(zkBaseTime,"yyyy-MM-dd HH:mm:ss.SSS")+")与本地应用程序服务器时间("+ DateTimeUtil.toDateTimeString(loclaBaseTime,"yyyy-MM-dd HH:mm:ss.SSS")+")相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
         }
     }
 
@@ -509,14 +510,14 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     public void clearExpireTaskTypeRunningInfo(String baseTaskType, String serverUUID, double expireDateInternal) throws Exception {
         //这里为什么会是list呢，就是为了区分环境信息，比如开发环境与测试环境
         //TODO:但是目前我们的管理平台仅支持一种环境的
-        List<String> taskTypeList= this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
+        List<String> taskTypeList = this.getZooKeeper().getChildren(this.PATH_BaseTaskType + "/" + baseTaskType, false);
 
         for (String taskType : taskTypeList) {
             String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
             Stat stat = this.getZooKeeper().exists(zkPath, false);
             //这里检测的是每个任务的taskItem节点最后修改时间mtime
             if (stat == null || getSystemTime() - stat.getMtime() > (long) (expireDateInternal * 24 * 3600 * 1000)) {
-                String tmpPath= this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType;
+                String tmpPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType;
                 logger.info("检测zkPath(" + zkPath + ")节点，最后修改时间超过了(" + expireDateInternal + ")天，所以即将删除节点：" + tmpPath);
                 ZKTools.deleteTree(this.getZooKeeper(), tmpPath);
             }
@@ -862,8 +863,8 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //之前在ScheduleServer.createScheduleServer方法中已经给uuid赋值过了，这里相当于不用上一次的赋值了,why,
         //因为这个方法registerScheduleServer，在heartBeatTimer[HeartBeatTimerTask]里可能会重复调用
         //此处必须增加UUID作为唯一性保障
-       String zkServerPath = zkPath + "/" + server.getTaskType() +
-               "$" + server.getIp() + "$"+ (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
+        String zkServerPath = zkPath + "/" + server.getTaskType() +
+                "$" + server.getIp() + "$" + (UUID.randomUUID().toString().replaceAll("-", "").toUpperCase()) + "$";
 //        String zkServerPath = zkPath + "/" + server.getUuid();
         String realPath = this.getZooKeeper().create(zkServerPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT_SEQUENTIAL);
         //这里的uuid实际上是uuid+自增序列号
@@ -915,7 +916,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server + "/" + serverUUID;
         if (this.getZooKeeper().exists(zkPath, false) != null) {
-            logger.info("删除服务器zkPath="+zkPath);
+            logger.info("删除服务器zkPath=" + zkPath);
             this.getZooKeeper().delete(zkPath, -1);
         }
     }

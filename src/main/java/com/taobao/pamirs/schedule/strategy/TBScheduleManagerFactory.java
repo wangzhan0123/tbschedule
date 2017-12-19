@@ -52,6 +52,10 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     private IScheduleDataManager scheduleTaskManager;
     private ScheduleStrategyDataManager4ZK scheduleStrategyManager;
 
+    /**
+     * key:任务名称strategyName
+     * value:当前机器参与执行的线程组管理器集合TBScheduleManager List<IStrategyTask> 备注：IStrategyTask的具体实现类是 TBScheduleManager
+     */
     private Map<String, List<IStrategyTask>> managerMap = new ConcurrentHashMap<String, List<IStrategyTask>>();
 
     private ApplicationContext applicationcontext;
@@ -201,6 +205,16 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     }
 
 
+    /**
+     * 这个方法周期性(timerInterval=2秒)执行，做了3件事：
+     *
+     * 1.将当前机器注册到$rootPath/factory/$uuid节点下，另外把当前机器满足最新IPList规则的注册到$rootPath/strategy/$uuid
+     * 2.把当前机器不满足最新IPList规则的任务给停止掉
+     * 3.计算每台机器分配的线程组数量，并保存到节点data中$rootPath/strategy/$uuid
+     * 4.缓存已经分配过的任务，存储到managerMap中，尚未分配过的调用TBScheduleManagerFactory.createStrategyTask来创建Timer来执行真实的任务
+     *
+     * @throws Exception
+     */
     public void reRegisterManagerFactory() throws Exception {
         //重新分配调度器
         List<String> stopStrategyNameList = this.getScheduleStrategyManager().registerManagerFactory(this);

@@ -31,10 +31,17 @@ public class TaskItemDefine {
         return taskItemId;
     }
 
+    //@Override
+    //public String toString() {
+    //    return "(taskItemId=" + taskItemId + ",parameter=" + parameter + ")";
+    //}
+
+
     @Override
     public String toString() {
-        return "(taskItemId=" + taskItemId + ",parameter=" + parameter + ")";
+        return "TaskItemDefine{" +
+                "taskItemId='" + taskItemId + '\'' +
+                ", parameter='" + parameter + '\'' +
+                '}';
     }
-
-
 }

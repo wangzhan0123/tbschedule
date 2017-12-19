@@ -223,4 +223,27 @@ public class ScheduleServer {
         return managerFactoryUUID;
     }
 
+    @Override
+    public String toString() {
+        return "ScheduleServer{" +
+                "uuid='" + uuid + '\'' +
+                ", id=" + id +
+                ", managerFactoryUUID='" + managerFactoryUUID + '\'' +
+                ", baseTaskType='" + baseTaskType + '\'' +
+                ", taskType='" + taskType + '\'' +
+                ", ownSign='" + ownSign + '\'' +
+                ", ip='" + ip + '\'' +
+                ", hostName='" + hostName + '\'' +
+                ", threadNum=" + threadNum +
+                ", registerTime=" + registerTime +
+                ", heartBeatTime=" + heartBeatTime +
+                ", lastFetchDataTime=" + lastFetchDataTime +
+                ", nextRunStartTime='" + nextRunStartTime + '\'' +
+                ", nextRunEndTime='" + nextRunEndTime + '\'' +
+                ", centerServerTime=" + centerServerTime +
+                ", version=" + version +
+                ", isRegister=" + isRegister +
+                ", dealInfoDesc='" + dealInfoDesc + '\'' +
+                '}';
+    }
 }
