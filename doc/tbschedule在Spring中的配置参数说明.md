@@ -13,7 +13,7 @@
 </bean>
 
 
-<!-- tbSchedult 参数-->
+<!-- tbSchedule maven profile参数 -->
 <mvn.tbSchedule.zkConnectString>192.168.202.106:2181</mvn.tbSchedule.zkConnectString>
 <mvn.tbSchedule.rootPath>/o2oworkerpath/o2o-message-center</mvn.tbSchedule.rootPath>
 <mvn.tbSchedule.zkSessionTimeout>60000</mvn.tbSchedule.zkSessionTimeout>
