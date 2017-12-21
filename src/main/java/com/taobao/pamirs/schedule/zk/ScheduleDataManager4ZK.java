@@ -92,8 +92,15 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
     }
 
-    public void initialRunningInfo4Static(String baseTaskType, String ownSign, String uuid)
-            throws Exception {
+    /**
+     * 程序刚刚启动，清除这个节点下的数据$rootPath/baseTaskType/$baseTaskType/$taskType/taskItem/，由本次新选举的线程组Leader进行分配
+     *
+     * @param baseTaskType
+     * @param ownSign
+     * @param uuid
+     * @throws Exception
+     */
+    public void initialRunningInfo4Static(String baseTaskType, String ownSign, String uuid) throws Exception {
 
         String taskType = ScheduleUtil.getTaskTypeByBaseAndOwnSign(baseTaskType, ownSign);
         //清除所有的老信息，只有leader能执行此操作
@@ -525,7 +532,9 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     /**
-     * 调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/serverUuid最后修改时间超过了expireTime，就会被清除
+     * 调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/serverUuid最后修改时间超过了expireTime(来自于任务配置参数<假定服务死亡间隔(s),大家一般配置的是60s>)，就会被清除
+     * 这个节点被清除的后果是Timer(HeartBeatTimerTask 来自于<心跳频率(s) 大家一般配置的是5s>),发现这个节点（即线程组）不存在时会进行任务项的转移
+     *
      * @param taskType
      * @param expireTime expireTime(一般配置是60秒)
      * @return
@@ -596,7 +605,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     /**
-     * 获取当前任务参与执行的机器列表，按照自增序列号升序排列
+     * 获取当前任务参与执行的线程组列表，按照自增序列号升序排列
      *
      * @param taskType
      * @return
@@ -678,6 +687,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         return result;
     }
 
+    /**
+     * 获得线程组列表中的Leader
+     *
+     * @param serverList
+     * @return
+     */
     public String getLeader(List<String> serverList) {
         if (serverList == null || serverList.size() == 0) {
             return "";
@@ -738,14 +753,14 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
         int unModifyCount = 0;
-        int[] taskNums = ScheduleUtil.assignTaskItemNum(taskServerList.size(), taskItemIdList.size());
+        int[] taskItemNums = ScheduleUtil.assignTaskItemNum(taskServerList.size(), taskItemIdList.size());
         int point = 0;
         int count = 0;
-        String NO_SERVER_DEAL = "没有分配到服务器";
+        String NO_SERVER_DEAL = "没有分配到线程组";
         for (int i = 0; i < taskItemIdList.size(); i++) {
             String taskItemId = taskItemIdList.get(i);
-            if (point < taskServerList.size() && i >= count + taskNums[point]) {
-                count = count + taskNums[point];
+            if (point < taskServerList.size() && i >= count + taskItemNums[point]) {
+                count = count + taskItemNums[point];
                 point = point + 1;
             }
             String serverName = NO_SERVER_DEAL;

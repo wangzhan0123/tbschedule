@@ -33,15 +33,18 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
     }
 
     public void initialRunningInfo() throws Exception {
+        //调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/serverUuid最后修改时间超过了expireTime(来自于任务配置参数<假定服务死亡间隔(s),大家一般配置的是60s>)，就会被清除
+        //这个节点被清除的后果是Timer(HeartBeatTimerTask 来自于<心跳频率(s) 大家一般配置的是5s>),发现这个节点（即线程组）不存在时会进行任务项的转移
         scheduleTaskManager.clearExpireScheduleServer(this.scheduleServer.getTaskType(), this.taskTypeInfo.getJudgeDeadInterval());
-        List<String> list = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
-        if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), list)) {
-            //是第一次启动，先清除所有的垃圾数据
-            logger.debug(this.scheduleServer.getUuid() + ":" + list.size());
+
+        //清理之后还存活的线程组集合serverList
+        List<String> serverList = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
+        if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList)) {
+            //是第一次启动，Leader先清除所有的垃圾数据
+            logger.debug("程序第一次启动，Leader（"+this.scheduleServer.getUuid()+"）先清除所有的垃圾线程:" + serverList.size());
             this.scheduleTaskManager.initialRunningInfo4Static(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getOwnSign(), this.scheduleServer.getUuid());
         }
     }
-
     public void initial() throws Exception {
         new Thread(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-StartProcess") {
             @SuppressWarnings("static-access")
@@ -193,7 +196,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
 
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList) == false) {
             if (logger.isDebugEnabled()) {
-                logger.debug("scheduleServer("+this.scheduleServer.getUuid() + "):不是负责任务分配("+this.scheduleServer.getTaskType()+")的Leader,直接返回");
+                logger.debug("scheduleServer(" + this.scheduleServer.getUuid() + "):不是负责任务分配(" + this.scheduleServer.getTaskType() + ")的Leader,直接返回");
             }
             return;
         }
