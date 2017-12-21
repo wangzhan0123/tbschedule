@@ -254,7 +254,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             //举例说明， 8，8，0 => assignNumByOneServerArr=[1,1,1,1,1,1,1,1 ]
             //举例说明， 4，8，0 => assignNumByOneServerArr=[2,2,2,2 ]
             //举例说明， 3，8，0 => assignNumByOneServerArr=[3,3,2 ]
-            int[] assignNumByOneServerArr = ScheduleUtil.assignTaskNumber(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
+            int[] assignNumByOneServerArr = ScheduleUtil.assignServerNum(factoryList.size(), scheduleStrategy.getAssignNum(), scheduleStrategy.getNumOfSingleServer());
             for (int i = 0; i < factoryList.size(); i++) {
                 ScheduleStrategyRunntime factory = factoryList.get(i);
                 //更新每台服务器处理分配的线程组数量

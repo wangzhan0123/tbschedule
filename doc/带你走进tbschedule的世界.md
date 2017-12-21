@@ -1,0 +1,7 @@
+
+废除配置项
+
+分配的单线程组最大任务项数量 ScheduleTaskType.maxTaskItemsOfOneThreadGroup
+
+
+分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行) ScheduleStrategy.numOfSingleServer

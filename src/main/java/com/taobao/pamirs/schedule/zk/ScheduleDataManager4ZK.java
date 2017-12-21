@@ -535,8 +535,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     public int clearExpireScheduleServer(String taskType, long expireTime) throws Exception {
         int result = 0;
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
-        String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType
-                + "/" + taskType + "/" + this.PATH_Server;
+        String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType  + "/" + taskType + "/" + this.PATH_Server;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             String tempPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType;
             if (this.getZooKeeper().exists(tempPath, false) == null) {
@@ -739,7 +738,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
         int unModifyCount = 0;
-        int[] taskNums = ScheduleUtil.assignTaskNumber(taskServerList.size(), taskItemIdList.size(), maxNumOfOneServer);
+        int[] taskNums = ScheduleUtil.assignTaskItemNum(taskServerList.size(), taskItemIdList.size());
         int point = 0;
         int count = 0;
         String NO_SERVER_DEAL = "没有分配到服务器";
@@ -874,6 +873,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //这里heartBeatTime取的是zk服务器上当前的时间
         server.setHeartBeatTime(heartBeatTime);
 
+        logger.debug("创建scheduleServer:"+gson.toJson(server ));
         String valueString = this.gson.toJson(server);
         this.getZooKeeper().setData(realPath, valueString.getBytes(), -1);
 

@@ -84,14 +84,14 @@ public class ScheduleUtil {
     }
 
     /**
-     * 计算每个机器被分配的任务项数量
+     * 计算每个机器被分配的线程组数量
      *
-     * @param serverNum 总的服务器数量
-     * @param assignNum 分配的线程组数量(1项任务分配给多少个团队来执行)
+     * @param serverNum 总服务器数量
+     * @param assignNum 总线程组数量(1项任务分配给多少个团队来执行)
      * @param @Deprecated numOfSingleServer 分配的单JVM最大线程组数量(1项任务在1个房子<机器>里最多允许多少个团队来执行)
      * @return
      */
-    public static int[] assignTaskNumber(int serverNum, int assignNum, int numOfSingleServer) {
+    public static int[] assignServerNum(int serverNum, int assignNum, int numOfSingleServer) {
         int[] assignNumByOneServerArr = new int[serverNum];
         int numOfSingle = assignNum / serverNum;
         int otherNum = assignNum % serverNum;
@@ -101,6 +101,30 @@ public class ScheduleUtil {
 //			otherNum = 0;
 //		}
         //20150323 删除, 任务分片保证分配到所有的线程组数上。 结束
+        for (int i = 0; i < assignNumByOneServerArr.length; i++) {
+            if (i < otherNum) {
+                assignNumByOneServerArr[i] = numOfSingle + 1;
+            } else {
+                assignNumByOneServerArr[i] = numOfSingle;
+            }
+        }
+        return assignNumByOneServerArr;
+    }
+
+    /**
+     * 计算每个线程组被分配的任务项数量
+     *
+     * 为了更加清晰的定义变量名字，所以加上了这个方法，本质逻辑与assignServerNum相同
+     *
+     * @param serverNum 总线程组数量
+     * @param taskItemNum 总任务项数量
+     * @return
+     */
+    public static int[] assignTaskItemNum(int serverNum, int taskItemNum) {
+        int[] assignNumByOneServerArr = new int[serverNum];
+        int numOfSingle = taskItemNum / serverNum;
+        int otherNum = taskItemNum % serverNum;
+
         for (int i = 0; i < assignNumByOneServerArr.length; i++) {
             if (i < otherNum) {
                 assignNumByOneServerArr[i] = numOfSingle + 1;
@@ -123,29 +147,29 @@ public class ScheduleUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(printArray(assignTaskNumber(1, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(2, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(3, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(4, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(5, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(6, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(7, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(8, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(9, 10, 0)));
-        System.out.println(printArray(assignTaskNumber(10, 10, 0)));
+        System.out.println(printArray(assignServerNum(1, 10, 0)));
+        System.out.println(printArray(assignServerNum(2, 10, 0)));
+        System.out.println(printArray(assignServerNum(3, 10, 0)));
+        System.out.println(printArray(assignServerNum(4, 10, 0)));
+        System.out.println(printArray(assignServerNum(5, 10, 0)));
+        System.out.println(printArray(assignServerNum(6, 10, 0)));
+        System.out.println(printArray(assignServerNum(7, 10, 0)));
+        System.out.println(printArray(assignServerNum(8, 10, 0)));
+        System.out.println(printArray(assignServerNum(9, 10, 0)));
+        System.out.println(printArray(assignServerNum(10, 10, 0)));
 
         System.out.println("-----------------");
 
-        System.out.println(printArray(assignTaskNumber(1, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(2, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(3, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(4, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(5, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(6, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(7, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(8, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(9, 10, 3)));
-        System.out.println(printArray(assignTaskNumber(10, 10, 3)));
+        System.out.println(printArray(assignServerNum(1, 10, 3)));
+        System.out.println(printArray(assignServerNum(2, 10, 3)));
+        System.out.println(printArray(assignServerNum(3, 10, 3)));
+        System.out.println(printArray(assignServerNum(4, 10, 3)));
+        System.out.println(printArray(assignServerNum(5, 10, 3)));
+        System.out.println(printArray(assignServerNum(6, 10, 3)));
+        System.out.println(printArray(assignServerNum(7, 10, 3)));
+        System.out.println(printArray(assignServerNum(8, 10, 3)));
+        System.out.println(printArray(assignServerNum(9, 10, 3)));
+        System.out.println(printArray(assignServerNum(10, 10, 3)));
 
     }
 }
