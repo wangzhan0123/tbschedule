@@ -33,6 +33,12 @@ this.factory.refresh();
 
 this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeatTimer");
 this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
-         this.heartBeatTimer.schedule(
-                            new PauseOrResumeScheduleTask(this, this.heartBeatTimer, PauseOrResumeScheduleTask.TYPE_RESUME, tmpStr),
-                            firstStartTime);
+
+this.heartBeatTimer.schedule(
+                new PauseOrResumeScheduleTask(this, this.heartBeatTimer, PauseOrResumeScheduleTask.TYPE_RESUME, tmpStr),
+                firstStartTime);
+
+this.heartBeatTimer.schedule(
+            new PauseOrResumeScheduleTask(this, this.heartBeatTimer,
+                    PauseOrResumeScheduleTask.TYPE_PAUSE, tmpEndStr),
+            firstEndTime);
