@@ -14,7 +14,8 @@ public class ScheduleTaskType implements java.io.Serializable {
 
     //
     private static final long serialVersionUID = 1L;
-//    任务类型
+
+    //任务类型
     private String baseTaskType;
 
     //向配置中心更新心跳信息的频率(单位：s)

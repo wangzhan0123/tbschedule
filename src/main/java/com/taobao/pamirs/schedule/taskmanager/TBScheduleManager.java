@@ -451,7 +451,7 @@ class PauseOrResumeScheduleTask extends java.util.TimerTask {
     public void run() {
         try {
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            this.cancel();//取消调度任务
+            this.cancel();//取消调度任务，//TODO:这一步是否有点多余，正常情况下timer是会自动删除掉这个一次性任务的
             Date current = new Date(System.currentTimeMillis());
             CronExpression cexp = new CronExpression(this.cronTabExpress);
             Date nextTime = cexp.getNextValidTimeAfter(current);
