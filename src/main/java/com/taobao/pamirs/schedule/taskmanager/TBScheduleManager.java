@@ -75,7 +75,7 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     protected List<TaskItemDefine> currentTaskItemList = new CopyOnWriteArrayList<TaskItemDefine>();
     /**
-     * 最近一起重新装载调度任务的时间。
+     * 最近一起重新装载调度任务的时间[ZK服务器时间]
      * 当前实际  - 上此装载时间  > intervalReloadTaskItemList，则向配置中心请求最新的任务分配情况
      */
     protected long lastReloadTaskItemListTime = 0;
@@ -138,7 +138,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.scheduleServer.setManagerFactoryUUID(this.factory.getUuid()); //给currenScheduleServer追加赋值 factoryUuid
         this.scheduleTaskManager.registerScheduleServer(this.scheduleServer);
 //        this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
-        this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-tasktimer");
+        this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeatTimer");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
     }
@@ -223,7 +223,6 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     public void computerStart() throws Exception {
         //只有当存在可执行队列后再开始启动队列
-
         boolean isRunNow = false;
         if (this.taskTypeInfo.getPermitRunStartTime() == null) {
             isRunNow = true;

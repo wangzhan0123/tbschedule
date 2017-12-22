@@ -46,7 +46,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         zkBaseTime = tempStat.getCtime();
         ZKTools.deleteTree(getZooKeeper(), tempPath);
         if (Math.abs(this.zkBaseTime - this.loclaBaseTime) > 5000) {
-            logger.error("请注意，Zookeeper服务器时间("+ DateTimeUtil.toDateTimeString(zkBaseTime,"yyyy-MM-dd HH:mm:ss.SSS")+")与本地应用程序服务器时间("+ DateTimeUtil.toDateTimeString(loclaBaseTime,"yyyy-MM-dd HH:mm:ss.SSS")+")相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
+            logger.error("请注意，Zookeeper服务器时间(" + DateTimeUtil.toDateTimeString(zkBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")与本地应用程序服务器时间(" + DateTimeUtil.toDateTimeString(loclaBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
         }
     }
 
@@ -93,17 +93,17 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     /**
-     * 程序刚刚启动，清除这个节点下的数据$rootPath/baseTaskType/$baseTaskType/$taskType/taskItem/，由本次新选举的线程组Leader进行分配
+     * 程序启动，清除这个节点下的数据$rootPath/baseTaskType/$baseTaskType/$taskType/taskItem/，由本次新选举的线程组Leader进行重新分配
      *
      * @param baseTaskType
      * @param ownSign
-     * @param uuid
+     * @param serverUuid 线程组uuid
      * @throws Exception
      */
-    public void initialRunningInfo4Static(String baseTaskType, String ownSign, String uuid) throws Exception {
+    public void initialRunningInfo4Static(String baseTaskType, String ownSign, String serverUuid) throws Exception {
 
         String taskType = ScheduleUtil.getTaskTypeByBaseAndOwnSign(baseTaskType, ownSign);
-        //清除所有的老信息，只有leader能执行此操作
+        //1.清除taskItem目录，只有leader能执行此操作
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
         try {
             logger.info("删除所有taskItem子节点信息zkPath=" + zkPath);
@@ -117,16 +117,20 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
                 ZKTools.deleteTree(this.getZooKeeper(), zkPath);
             }
         }
-        //创建目录
+        //2.创建taskItem目录
         this.getZooKeeper().create(zkPath, null, this.zkManager.getAcl(), CreateMode.PERSISTENT);
-        //创建静态任务
+
+        //3.根据任务的任务项配置参数重新来创建节点
+        //  $rootPath/baseTaskType/$baseTaskType/$taskType/taskItem/X1...Xn
         this.createScheduleTaskItem(baseTaskType, ownSign, this.loadTaskTypeBaseInfo(baseTaskType).getTaskItems());
-        //标记信息初始化成功
-        setInitialRunningInfoSucuss(baseTaskType, taskType, uuid);
+
+        //4.在taskItem节点的data信息里记录当前线程组Leader信息【标记信息初始化成功】
+        setInitialRunningInfoSucuss(baseTaskType, taskType, serverUuid);
     }
 
     /**
-     * 在taskItem节点的data信息里记录当前Leader信息
+     * 在taskItem节点的data信息里记录当前线程组Leader信息
+     *
      * @param baseTaskType
      * @param taskType
      * @param uuid
@@ -137,9 +141,18 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         this.getZooKeeper().setData(zkPath, uuid.getBytes(), -1);
     }
 
+    /**
+     * 判断最新线程组Leader 与 $rootPath/baseTaskType/$baseTaskType/$taskType/taskItem节点中记录的是否相同，相同返回true,否则返回false
+     *
+     * @param baseTaskType
+     * @param ownSign
+     * @return
+     * @throws Exception
+     */
     public boolean isInitialRunningInfoSucuss(String baseTaskType, String ownSign) throws Exception {
         String taskType = ScheduleUtil.getTaskTypeByBaseAndOwnSign(baseTaskType, ownSign);
         String leader = this.getLeader(this.loadScheduleServerNames(taskType));
+
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
         if (this.getZooKeeper().exists(zkPath, false) != null) {
             byte[] curContent = this.getZooKeeper().getData(zkPath, false, null);
@@ -190,7 +203,8 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     /**
-     * 根据基础配置里面的任务项来创建各个域里面的任务项
+     * 根据任务的任务项配置参数重新来创建节点
+     * $rootPath/baseTaskType/$baseTaskType/$taskType/taskItem/X1...Xn
      *
      * @param baseTaskType
      * @param ownSign
@@ -430,8 +444,17 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         throw new Exception("没有实现的方法");
     }
 
+    /**
+     * 该方法仅仅是查询指定线程组serverUuid被分配的任务项而已,而不是进行真实的任务项分配
+     * 真正的任务项分配在HeartBeatTimerTask.assignScheduleTask()方法中处理
+     *
+     * @param taskType  任务类型
+     * @param serverUuid
+     * @return
+     * @throws Exception
+     */
     @Override
-    public List<TaskItemDefine> reloadDealTaskItem(String taskType, String uuid)
+    public List<TaskItemDefine> reloadDealTaskItem(String taskType, String serverUuid)
             throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_TaskItem;
@@ -457,12 +480,11 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
 
-        logger.debug(taskType + " current uid=" + uuid + " , zk  reloadDealTaskItem");
-
+        logger.debug("当前任务taskType=" + taskType + ",当前线程组serverUuid=" + serverUuid + " ,正在加载任务项");
         List<TaskItemDefine> result = new ArrayList<TaskItemDefine>();
         for (String name : taskItems) {
             byte[] value = this.getZooKeeper().getData(zkPath + "/" + name + "/cur_server", false, null);
-            if (value != null && uuid.equals(new String(value))) {
+            if (value != null && serverUuid.equals(new String(value))) {
                 TaskItemDefine item = new TaskItemDefine();
                 item.setTaskItemId(name);
                 byte[] parameterValue = this.getZooKeeper().getData(zkPath + "/" + name + "/parameter", false, null);
@@ -471,11 +493,10 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
                 }
                 result.add(item);
 
-
-            } else if (value != null && uuid.equals(new String(value)) == false) {
-                logger.trace(" current uid=" + uuid + " , zk cur_server uid=" + new String(value));
+            } else if (value != null && serverUuid.equals(new String(value)) == false) {
+                logger.trace(" current uid=" + serverUuid + " , zk cur_server uid=" + new String(value));
             } else {
-                logger.trace(" current uid=" + uuid);
+                logger.trace(" current uid=" + serverUuid);
             }
         }
         return result;
@@ -544,7 +565,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     public int clearExpireScheduleServer(String taskType, long expireTime) throws Exception {
         int result = 0;
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
-        String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType  + "/" + taskType + "/" + this.PATH_Server;
+        String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
             String tempPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType;
             if (this.getZooKeeper().exists(tempPath, false) == null) {
@@ -715,9 +736,8 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     }
 
     @Override
-    public void assignTaskItem(String taskType, String currentUuid, int maxNumOfOneServer,
-                               List<String> taskServerList) throws Exception {
-        if (this.isLeader(currentUuid, taskServerList) == false) {
+    public void assignTaskItem(String taskType, String currentUuid, int maxNumOfOneServer, List<String> serverList) throws Exception {
+        if (this.isLeader(currentUuid, serverList) == false) {
             if (logger.isDebugEnabled()) {
                 logger.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
             }
@@ -726,7 +746,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         if (logger.isDebugEnabled()) {
             logger.debug(currentUuid + ":开始重新分配任务......");
         }
-        if (taskServerList.size() <= 0) {
+        if (serverList.size() <= 0) {
             //在服务器动态调整的时候，可能出现服务器列表为空的清空
             return;
         }
@@ -753,19 +773,23 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
         int unModifyCount = 0;
-        int[] taskItemNums = ScheduleUtil.assignTaskItemNum(taskServerList.size(), taskItemIdList.size());
+        //举例说明， 8，8=> taskItemNums=[1,1,1,1,1,1,1,1 ]
+        //举例说明， 4，8=> taskItemNums=[2,2,2,2 ]
+        //举例说明， 3，8=> taskItemNums=[3,3,2 ]
+        //举例说明， 7，8=> taskItemNums=[2,1,1,1,1,1,1]
+        int[] taskItemNums = ScheduleUtil.assignTaskItemNum(serverList.size(), taskItemIdList.size());
         int point = 0;
         int count = 0;
         String NO_SERVER_DEAL = "没有分配到线程组";
         for (int i = 0; i < taskItemIdList.size(); i++) {
             String taskItemId = taskItemIdList.get(i);
-            if (point < taskServerList.size() && i >= count + taskItemNums[point]) {
+            if (point < serverList.size() && i >= count + taskItemNums[point]) {
                 count = count + taskItemNums[point];
                 point = point + 1;
             }
             String serverName = NO_SERVER_DEAL;
-            if (point < taskServerList.size()) {
-                serverName = taskServerList.get(point);
+            if (point < serverList.size()) {
+                serverName = serverList.get(point);
             }
             byte[] curServerValue = this.getZooKeeper().getData(zkPath + "/" + taskItemId + "/cur_server", false, null);
             byte[] reqServerValue = this.getZooKeeper().getData(zkPath + "/" + taskItemId + "/req_server", false, null);
@@ -888,7 +912,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //这里heartBeatTime取的是zk服务器上当前的时间
         server.setHeartBeatTime(heartBeatTime);
 
-        logger.debug("创建scheduleServer:"+gson.toJson(server ));
+        logger.debug("创建scheduleServer:" + gson.toJson(server));
         String valueString = this.gson.toJson(server);
         this.getZooKeeper().setData(realPath, valueString.getBytes(), -1);
 

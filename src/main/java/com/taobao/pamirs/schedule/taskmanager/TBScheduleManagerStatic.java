@@ -16,6 +16,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
      */
     protected int taskItemCount = 0;
 
+    //记录最新的版本号(取的是$rootPath/baseTaskType/$baseTaskType/$taskType/server节点的stat.version信息)
     protected long lastFetchVersion = -1;
 
     private final Object NeedReloadTaskItemLock = new Object();
@@ -33,15 +34,15 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
     }
 
     public void initialRunningInfo() throws Exception {
-        //调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/serverUuid最后修改时间超过了expireTime(来自于任务配置参数<假定服务死亡间隔(s),大家一般配置的是60s>)，就会被清除
+        //调度服务器节点$rootPath/baseTaskType/$baseTaskType/$taskType/server/$serverUuid最后修改时间超过了expireTime(来自于任务配置参数<假定服务死亡间隔(s),大家一般配置的是60s>)，就会被清除
         //这个节点被清除的后果是Timer(HeartBeatTimerTask 来自于<心跳频率(s) 大家一般配置的是5s>),发现这个节点（即线程组）不存在时会进行任务项的转移
         scheduleTaskManager.clearExpireScheduleServer(this.scheduleServer.getTaskType(), this.taskTypeInfo.getJudgeDeadInterval());
 
-        //清理之后还存活的线程组集合serverList
+        //清理之后还存活的线程组收集起来存放到集合serverList中
         List<String> serverList = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList)) {
             //是第一次启动，Leader先清除所有的垃圾数据
-            logger.debug("程序第一次启动，Leader（"+this.scheduleServer.getUuid()+"）先清除所有的垃圾线程:" + serverList.size());
+            logger.debug("程序第一次启动，Leader（"+this.scheduleServer.getUuid()+"）先清除taskItem目录,再重新创建");
             this.scheduleTaskManager.initialRunningInfo4Static(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getOwnSign(), this.scheduleServer.getUuid());
         }
     }
@@ -88,7 +89,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                         }
                         tmpStr = tmpStr + currentTaskItemList.get(i);
                     }
-                    logger.info("获取到任务处理队列，开始调度：" + tmpStr + "  of  " + scheduleServer);
+                    logger.info("获取到任务处理队列，开始调度具体任务项[" + tmpStr + "]  of  " + scheduleServer);
 
                     //任务总量
                     taskItemCount = scheduleTaskManager.loadAllTaskItem(scheduleServer.getTaskType()).size();
@@ -158,19 +159,21 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         return this.lastFetchVersion < this.scheduleTaskManager.getReloadTaskItemFlag(this.scheduleServer.getTaskType());
     }
 
-    /**判断某个任务对应的线程组是否处于僵尸状态。
+    /**
+     * 判断某个任务对应的线程组是否处于僵尸状态。
      * true 表示有线程组处于僵尸状态。需要告警。
-     * @param type
+     *
+     * @param taskType
      * @param statMap
      * @return
      * @throws Exception
      */
-    private boolean isExistZombieServ(String type, Map<String, Stat> statMap) throws Exception {
+    private boolean isExistZombieServ(String taskType, Map<String, Stat> statMap) throws Exception {
         boolean exist = false;
-        for (String key : statMap.keySet()) {
-            Stat s = statMap.get(key);
+        for (String serverUuid : statMap.keySet()) {
+            Stat s = statMap.get(serverUuid);
             if (this.scheduleTaskManager.getSystemTime() - s.getMtime() > this.taskTypeInfo.getHeartBeatRate() * 40) {
-                logger.error("zombie serverList exists! serv=" + key + " ,type=" + type + "超过40次心跳周期未更新");
+                logger.error("存在僵尸线程组! serverUuid=" + serverUuid + " ,taskType=" + taskType + "超过40次心跳周期未更新");
                 exist = true;
             }
         }
@@ -208,6 +211,8 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
 
         //2.检查每个任务项的处理机器cur_server，是否还处于存活状态，不存活则擦除掉
         scheduleTaskManager.clearTaskItem(this.scheduleServer.getTaskType(), serverList);
+
+        //3.真正的给每个线程组serverUuid分配任务项
         scheduleTaskManager.assignTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid(), this.taskTypeInfo.getMaxTaskItemsOfOneThreadGroup(), serverList);
     }
 
@@ -252,22 +257,22 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         //20151019 by kongxuan.zlj
         try {
             Map<String, Stat> statMap = this.scheduleTaskManager.getCurrentServerStatList(this.scheduleServer.getTaskType());
-            //server下面的机器节点的运行时环境是否在刷新，如果
+            //server下面的机器节点的运行时环境是否在刷新，未刷新的话，打印告警日志
             isExistZombieServ(this.scheduleServer.getTaskType(), statMap);
         } catch (Exception e) {
             logger.error("zombie serverList exists， Exception:", e);
         }
-        //获取最新的版本号
+        //记录最新的版本号(取的是$rootPath/baseTaskType/$baseTaskType/$taskType/server节点的stat.version信息)
         this.lastFetchVersion = this.scheduleTaskManager.getReloadTaskItemFlag(this.scheduleServer.getTaskType());
-        logger.debug(" this.scheduleServer.getTaskType()=" + this.scheduleServer.getTaskType() + ",  need reload=" + isNeedReloadTaskItem);
+        logger.debug(" this.scheduleServer.getTaskType()=" + this.scheduleServer.getTaskType() + ",isNeedReloadTaskItem=" + isNeedReloadTaskItem);
         try {
             //是否被人申请的队列
             this.scheduleTaskManager.releaseDealTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
-            //重新查询当前服务器能够处理的队列
+
+            //该方法仅仅是查询指定线程组serverUuid被分配的任务项而已,而不是进行真实的任务项分配
             //为了避免在休眠切换的过程中出现队列瞬间的不一致，先清除内存中的队列
             this.currentTaskItemList.clear();
-            this.currentTaskItemList = this.scheduleTaskManager.reloadDealTaskItem(
-                    this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
+            this.currentTaskItemList = this.scheduleTaskManager.reloadDealTaskItem(  this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
 
             //如果超过10个心跳周期还没有获取到调度队列，则报警
             if (this.currentTaskItemList.size() == 0 &&
@@ -281,7 +286,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                 buf.append("  currentTaskItemList.size() =" + currentTaskItemList.size());
                 buf.append(" ,scheduleTaskManager.getSystemTime()=" + scheduleTaskManager.getSystemTime());
                 buf.append(" ,lastReloadTaskItemListTime=" + lastReloadTaskItemListTime);
-                buf.append(" ,taskTypeInfo.getHeartBeatRate()=" + taskTypeInfo.getHeartBeatRate() * 10);
+                buf.append(" ,taskTypeInfo.getHeartBeatRate()*20=" + taskTypeInfo.getHeartBeatRate() * 20);
                 logger.error(buf.toString());
             }
 

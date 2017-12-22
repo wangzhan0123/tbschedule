@@ -53,6 +53,7 @@ public class ScheduleTaskItem {
 
     /**
      * 完成状态
+     * TODO：目前来看是冗余字段，后期可以删除掉
      */
     private TaskItemSts sts = TaskItemSts.ACTIVTE;
 

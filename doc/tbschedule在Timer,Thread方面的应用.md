@@ -4,7 +4,6 @@ zk = new ZooKeeper(……）
     sendThread = new SendThread(clientCnxnSocket);
     eventThread = new EventThread();
 
-
 InitialThread
 启动的时候异步化操作，避免阻塞整个应用程序的启动过程，异步化的操作全部封装在这个方法里
 public void initialData() throws Exception {
@@ -24,10 +23,16 @@ public void initialData() throws Exception {
     }
 }
 
-
 timer = new Timer("TBScheduleManagerFactory-Timer");
 timerTask = new ManagerFactoryTimerTask(this);
 timer.schedule(timerTask, 2000, this.timerInterval);  // timerInterval = 2000;
 
 这个task(ManagerFactoryTimerTask)每2秒执行1次
 this.factory.refresh();
+
+
+this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeatTimer");
+this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
+         this.heartBeatTimer.schedule(
+                            new PauseOrResumeScheduleTask(this, this.heartBeatTimer, PauseOrResumeScheduleTask.TYPE_RESUME, tmpStr),
+                            firstStartTime);
