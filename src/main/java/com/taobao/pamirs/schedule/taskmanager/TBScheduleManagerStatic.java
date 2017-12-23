@@ -11,15 +11,14 @@ import java.util.Map;
 
 public class TBScheduleManagerStatic extends TBScheduleManager {
     private static transient Logger logger = LoggerFactory.getLogger(TBScheduleManagerStatic.class);
-    /**
-     * 总的任务数量
-     */
+
+    /**  任务项总数 */
     protected int taskItemCount = 0;
 
     //记录最新的版本号(取的是$rootPath/baseTaskType/$baseTaskType/$taskType/server节点的stat.version信息)
     protected long lastFetchVersion = -1;
 
-    private final Object NeedReloadTaskItemLock = new Object();
+    private final Object needReloadTaskItemLock = new Object();
 
     /**
      *
@@ -91,7 +90,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                     }
                     logger.info("获取到任务处理队列，开始调度具体任务项[" + tmpStr + "]  of  " + scheduleServer);
 
-                    //任务总量
+                    //任务项总数
                     taskItemCount = scheduleTaskManager.loadAllTaskItem(scheduleServer.getTaskType()).size();
                     //只有在已经获取到任务处理队列后才开始启动任务处理器
                     computerStart();
@@ -128,7 +127,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
             boolean tmpBoolean = this.isNeedReLoadTaskItemList();
             if (tmpBoolean != this.isNeedReloadTaskItem) {
                 //只要不相同，就设置需要重新装载，因为在心跳异常的时候，做了清理队列的事情，恢复后需要重新装载。
-                synchronized (NeedReloadTaskItemLock) {
+                synchronized (needReloadTaskItemLock) {
                     this.isNeedReloadTaskItem = true;
                 }
                 rewriteScheduleInfo();
@@ -238,7 +237,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
                     }
                 }
                 //真正开始处理数据
-                synchronized (NeedReloadTaskItemLock) {
+                synchronized (needReloadTaskItemLock) {
                     this.getCurrentScheduleTaskItemListNow();
                     this.isNeedReloadTaskItem = false;
                 }

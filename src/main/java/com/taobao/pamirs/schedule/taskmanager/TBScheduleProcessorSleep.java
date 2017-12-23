@@ -24,37 +24,27 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
     private static transient Logger logger = LoggerFactory.getLogger(TBScheduleProcessorSleep.class);
     final LockObject m_lockObject = new LockObject();
     List<Thread> threadList = new CopyOnWriteArrayList<Thread>();
-    /**
-     * 任务管理器
-     */
+
+    /** 任务管理器 */
     protected TBScheduleManager scheduleManager;
-    /**
-     * 任务类型
-     */
+
+    /** 任务类型 */
     ScheduleTaskType taskTypeInfo;
 
-    /**
-     * 任务处理的接口类
-     */
+    /** 任务处理的接口类 */
     protected IScheduleTaskDeal<T> taskDealBean;
 
-    /**
-     * 当前任务队列的版本号
-     */
+    /** 当前任务队列的版本号 */
     protected long taskListVersion = 0;
     final Object lockVersionObject = new Object();
     final Object lockRunningList = new Object();
 
     protected List<T> taskList = new CopyOnWriteArrayList<T>();
 
-    /**
-     * 是否可以批处理
-     */
+    /** 是否可以批处理 */
     boolean isMutilTask = false;
 
-    /**
-     * 是否已经获得终止调度信号
-     */
+    /** 是否已经获得终止调度信号 */
     boolean isStopSchedule = false;// 用户停止队列调度
     boolean isSleeping = false;
 
@@ -262,6 +252,8 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                 if (logger.isTraceEnabled()) {
                     logger.trace(Thread.currentThread().getName() + "：当前运行线程数量:" + this.m_lockObject.count());
                 }
+
+                //这个方法的目的保证了loadScheduleData()只有其中1个线程来执行，当有多个线程时，其它的线程阻塞等待
                 if (this.m_lockObject.realseThreadButNotLast() == false) {
                     int size = 0;
                     Thread.currentThread().sleep(100);
@@ -271,7 +263,8 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                     if (size > 0) {
                         this.m_lockObject.notifyOtherThread();
                     } else {
-                        //判断当没有数据的是否，是否需要退出调度
+                        //判断当没有数据的时候，是否需要退出调度
+                        //这个方法this.scheduleManager.isContinueWhenData()中当条件满足的时候会退出调度
                         if (this.isStopSchedule == false && this.scheduleManager.isContinueWhenData() == true) {
                             if (logger.isTraceEnabled()) {
                                 logger.trace("没有装载到数据，start sleep");

@@ -43,11 +43,11 @@ abstract class TBScheduleManager implements IStrategyTask {
      * 用户标识不同线程的序号
      */
     private static int nextSerialNumber = 0;
-
     /**
      * 当前线程组编号
      */
     protected int threadGroupNumber = 0;
+
     /**
      * 调度任务类型信息
      */
@@ -60,6 +60,17 @@ abstract class TBScheduleManager implements IStrategyTask {
      * 队列处理器
      */
     IScheduleTaskDeal taskDealBean;
+    /**
+     *  当前线程组分配的任务项列表
+     *  ArrayList实现不是同步的。因多线程操作修改该列表，会造成ConcurrentModificationException
+     */
+    protected List<TaskItemDefine> currentTaskItemList = new CopyOnWriteArrayList<TaskItemDefine>();
+
+    //    private String mBeanName;
+    /**
+     * 向配置中心更新信息的定时器
+     */
+    private Timer heartBeatTimer;
 
     /**
      * 多线程任务处理器
@@ -68,12 +79,11 @@ abstract class TBScheduleManager implements IStrategyTask {
     StatisticsInfo statisticsInfo = new StatisticsInfo();
 
     boolean isPauseSchedule = true;
+    protected boolean isStopSchedule = false;
+
+
     String pauseMessage = "";
-    /**
-     *  当前处理任务队列清单
-     *  ArrayList实现不是同步的。因多线程操作修改该列表，会造成ConcurrentModificationException
-     */
-    protected List<TaskItemDefine> currentTaskItemList = new CopyOnWriteArrayList<TaskItemDefine>();
+
     /**
      * 最近一起重新装载调度任务的时间[ZK服务器时间]
      * 当前实际  - 上此装载时间  > intervalReloadTaskItemList，则向配置中心请求最新的任务分配情况
@@ -82,17 +92,11 @@ abstract class TBScheduleManager implements IStrategyTask {
     protected boolean isNeedReloadTaskItem = true;
 
 
-//    private String mBeanName;
-    /**
-     * 向配置中心更新信息的定时器
-     */
-    private Timer heartBeatTimer;
-
     protected IScheduleDataManager scheduleTaskManager;
 
     protected String startErrorInfo = null;
 
-    protected boolean isStopSchedule = false;
+
     protected Lock registerLock = new ReentrantLock();
 
     /**
@@ -191,6 +195,16 @@ abstract class TBScheduleManager implements IStrategyTask {
 
     }
 
+    /**
+     * 更新当前线程组节点信息$rootPath/baseTaskType/$baseTaskType/$taskType/server/$serverUuid data信息
+     * 1.dealInfoDesc
+     * 2.heartBeatTime
+     * 3.version
+     *
+     * TODO:由于this.assignScheduleTask()方法可能会清理已经死亡的线程组节点，所以如果节点被删除后，就重新注册scheduleServer
+     *
+     * @throws Exception
+     */
     public void rewriteScheduleInfo() throws Exception {
         registerLock.lock();
         try {
@@ -283,6 +297,12 @@ abstract class TBScheduleManager implements IStrategyTask {
         }
     }
 
+    /**
+     * 判断是否暂停本次任务调度（仅仅影响当前这个时间周期，当到达下一个时间触发点时仍然可以执行）
+     *
+     *
+     * @return
+     */
     public boolean isPauseWhenNoData() {
         //如果还没有分配到任务队列则不能退出
         if (this.currentTaskItemList.size() > 0 && this.taskTypeInfo.getPermitRunStartTime() != null) {
@@ -352,7 +372,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         if (logger.isInfoEnabled()) {
             logger.info("停止服务器 ：" + this.scheduleServer.getUuid());
         }
-        this.isPauseSchedule = false;
+        this.isPauseSchedule = false; //不是暂停，是停止 heartBeatTimer
         if (this.processor != null) {
             this.processor.stopSchedule();
         } else {
@@ -361,6 +381,8 @@ abstract class TBScheduleManager implements IStrategyTask {
     }
 
     /**
+     * 支持处理 暂停<isPauseSchedule> 与 注销<isStopSchedule> 2种情况
+     *
      * 只应该在Processor中调用
      * @throws Exception
      */

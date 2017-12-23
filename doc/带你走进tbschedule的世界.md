@@ -29,3 +29,14 @@
 CopyOnWriteArrayList的原理
 protected List<TaskItemDefine> currentTaskItemList = new CopyOnWriteArrayList<TaskItemDefine>();
 
+threadNum-每个线程组分配的线程数量
+Spring bean(IScheduleTaskDealMulti，IScheduleTaskDealSingle)其中的 selectTasks(...)会由单线程来处理
+另外的execute(...)会是多线程来处理
+
+?????????
+任务配置
+每10秒执行1次 0/10 * * * * *
+如果10:00:00秒执行了1次，用了68秒，那么这个期间，10:00:10,10:00:20,10:00:30任务会触发会执行么
+TBScheduleManager.resume() 会被触发，但是真实的任务不会执行，原因在于这个变量TBScheduleManager.isPauseSchedule
+
+

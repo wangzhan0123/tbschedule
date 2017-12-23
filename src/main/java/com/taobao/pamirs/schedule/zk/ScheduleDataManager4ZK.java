@@ -307,31 +307,32 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
         for (String taskItem : taskItems) {
-            ScheduleTaskItem info = new ScheduleTaskItem();
-            info.setTaskType(taskType);
-            info.setTaskItem(taskItem);
+
+            ScheduleTaskItem scheduleTaskItem = new ScheduleTaskItem();
+            scheduleTaskItem.setTaskType(taskType);
+            scheduleTaskItem.setTaskItem(taskItem);
             String zkTaskItemPath = zkPath + "/" + taskItem;
             byte[] curContent = this.getZooKeeper().getData(zkTaskItemPath + "/cur_server", false, null);
             if (curContent != null) {
-                info.setCurrentScheduleServer(new String(curContent));
+                scheduleTaskItem.setCurrentScheduleServer(new String(curContent));
             }
             byte[] reqContent = this.getZooKeeper().getData(zkTaskItemPath + "/req_server", false, null);
             if (reqContent != null) {
-                info.setRequestScheduleServer(new String(reqContent));
+                scheduleTaskItem.setRequestScheduleServer(new String(reqContent));
             }
             byte[] stsContent = this.getZooKeeper().getData(zkTaskItemPath + "/sts", false, null);
             if (stsContent != null) {
-                info.setSts(ScheduleTaskItem.TaskItemSts.valueOf(new String(stsContent)));
+                scheduleTaskItem.setSts(ScheduleTaskItem.TaskItemSts.valueOf(new String(stsContent)));
             }
             byte[] parameterContent = this.getZooKeeper().getData(zkTaskItemPath + "/parameter", false, null);
             if (parameterContent != null) {
-                info.setDealParameter(new String(parameterContent));
+                scheduleTaskItem.setDealParameter(new String(parameterContent));
             }
             byte[] dealDescContent = this.getZooKeeper().getData(zkTaskItemPath + "/deal_desc", false, null);
             if (dealDescContent != null) {
-                info.setDealDesc(new String(dealDescContent));
+                scheduleTaskItem.setDealDesc(new String(dealDescContent));
             }
-            result.add(info);
+            result.add(scheduleTaskItem);
         }
         return result;
 
@@ -482,12 +483,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
 
         logger.debug("当前任务taskType=" + taskType + ",当前线程组serverUuid=" + serverUuid + " ,正在加载任务项");
         List<TaskItemDefine> result = new ArrayList<TaskItemDefine>();
-        for (String name : taskItems) {
-            byte[] value = this.getZooKeeper().getData(zkPath + "/" + name + "/cur_server", false, null);
+        for (String taskItem : taskItems) {
+            byte[] value = this.getZooKeeper().getData(zkPath + "/" + taskItem + "/cur_server", false, null);
             if (value != null && serverUuid.equals(new String(value))) {
                 TaskItemDefine item = new TaskItemDefine();
-                item.setTaskItemId(name);
-                byte[] parameterValue = this.getZooKeeper().getData(zkPath + "/" + name + "/parameter", false, null);
+                item.setTaskItemId(taskItem);
+                byte[] parameterValue = this.getZooKeeper().getData(zkPath + "/" + taskItem + "/parameter", false, null);
                 if (parameterValue != null) {
                     item.setParameter(new String(parameterValue));
                 }
@@ -951,11 +952,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         }
     }
 
+
     public void unRegisterScheduleServer(String taskType, String serverUUID) throws Exception {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server + "/" + serverUUID;
         if (this.getZooKeeper().exists(zkPath, false) != null) {
-            logger.info("删除服务器zkPath=" + zkPath);
+            logger.info("删除线程组.zkPath=" + zkPath);
             this.getZooKeeper().delete(zkPath, -1);
         }
     }

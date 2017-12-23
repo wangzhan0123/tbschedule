@@ -33,7 +33,7 @@ public class ScheduleTaskType implements java.io.Serializable {
     //每次获取数据的数量
     private int fetchDataNumber = 500;
 
-    //在批处理的时候，每次处理的数据量
+    //在批处理的时候，每次处理的数据量(该参数仅对实现了IScheduleTaskDealMulti接口的任务有效)
     private int executeNumber = 1;
 
     //单线程组的线程数量
