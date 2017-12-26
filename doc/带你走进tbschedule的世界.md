@@ -36,7 +36,25 @@ Spring bean(IScheduleTaskDealMulti，IScheduleTaskDealSingle)其中的 selectTas
 ?????????
 任务配置
 每10秒执行1次 0/10 * * * * *
-如果10:00:00秒执行了1次，用了68秒，那么这个期间，10:00:10,10:00:20,10:00:30任务会触发会执行么
-TBScheduleManager.resume() 会被触发，但是真实的任务不会执行，原因在于这个变量TBScheduleManager.isPauseSchedule
+如果10:00:00秒执行了1次，用了12秒，那么这个期间，10:00:10,10:00:20,10:00:30任务会触发会执行么,结论：10:00:10不会执行，10:00:20会会执行，10:00:30不会执行，
+解释说明：TBScheduleManager.resume()方法还是会被每10秒的频率触发，但是真实的任务不会执行，原因在于这个变量 TBScheduleManager.isPauseSchedule
+真实的任务在执行时会将TBScheduleManager.isPauseSchedule=false,而TBScheduleManager.resume()每次在调用执行任务时会校验这个变量只有当TBScheduleManager.isPauseSchedule=true时才会执行
+
+TBScheduleManager.isPauseSchedule=true的条件，达到了结束任务触发的规则permitRunEndTime
+permitRunStartTime有值，则以实际值进行暂停
+permitRunStartTime没有值，则当本次任务selectTasks()返回条数==0时进行暂停
+ public boolean isPauseWhenNoData() {
+        //如果还没有分配到任务队列则不能退出
+        if (this.currentTaskItemList.size() > 0 && this.taskTypeInfo.getPermitRunStartTime() != null) {
+            if (this.taskTypeInfo.getPermitRunEndTime() == null
+                    || this.taskTypeInfo.getPermitRunEndTime().equals("-1")) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
 
 

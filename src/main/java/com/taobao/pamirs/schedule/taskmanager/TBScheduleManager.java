@@ -409,6 +409,17 @@ abstract class TBScheduleManager implements IStrategyTask {
         }
     }
 
+    protected void destoryProcessor() throws Exception {
+        registerLock.lock();
+        try {
+            if (this.processor != null) {
+                this.processor = null;
+            }
+        } finally {
+            registerLock.unlock();
+        }
+    }
+
     public ScheduleTaskType getTaskTypeInfo() {
         return taskTypeInfo;
     }
