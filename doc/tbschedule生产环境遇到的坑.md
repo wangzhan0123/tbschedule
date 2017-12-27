@@ -18,7 +18,6 @@ TBScheduleProcessorSleep
 	      当没有取到数据时，执行暂停
 	      scheduleManager.isContinueWhenData()
 
-
     public boolean isContinueWhenData() throws Exception {
         if (isPauseWhenNoData() == true) {
             this.pause("没有数据,暂停调度");
@@ -53,7 +52,6 @@ TBScheduleProcessorSleep
     }
 
 2.#################################################
-
 时间： [DEBUG 2017-12-22 15:51:30.001]
 线程名称：[scanPushTaskSchedule_TASK-2-HeartBeat]-代号线程Y，
 关键日志：[DEBUG 2017-12-22 15:51:30.001] [scanPushTaskSchedule_TASK-2-HeartBeat] [com.taobao.pamirs.schedule.taskmanager.TBScheduleManager.resume(TBScheduleManager.java:311)] 恢复调度:scanPushTaskSchedule_TASK$10.190.17.166$4E71B6428C7D4D24B11ABADF71546A7F$0000000049
@@ -83,11 +81,9 @@ TBScheduleProcessorSleep
 
 
 3.#################################################
-
 时间： [TRACE 2017-12-22 15:51:30.001]
 线程名称：[scanPushTaskSchedule_TASK-2-exe0] -代号线程X1 , [scanPushTaskSchedule_TASK-2-exe0] -代号线程X2
 关键日志：[TRACE 2017-12-22 15:51:30.001] [scanPushTaskSchedule_TASK-2-exe0] [com.taobao.pamirs.schedule.taskmanager.TBScheduleProcessorSleep.run(TBScheduleProcessorSleep.java:256)] scanPushTaskSchedule_TASK-2-exe0：当前运行线程数量:1 =====》这里是本次resume()方法唤醒执行的线程X1
-
 [DEBUG 2017-12-22 15:51:30.022] [scanPushTaskSchedule_TASK-2-exe0] [com.taobao.pamirs.schedule.taskmanager.TBScheduleManager.unRegisterScheduleServer(TBScheduleManager.java:363)] 注销服务器 ：scanPushTaskSchedule_TASK$10.190.17.166$4E71B6428C7D4D24B11ABADF71546A7F$0000000049 =====》这里是上次resume()方法唤醒执行的线程X2（那为什么线程名字相同呢，是由于他们的生成规则造成的）
 
 关键代码：
@@ -99,7 +95,6 @@ TBScheduleProcessorSleep
 
         return;
     }
-
 
     protected void unRegisterScheduleServer() throws Exception {
         this.registerLock.lock();
