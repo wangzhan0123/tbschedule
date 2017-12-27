@@ -44,7 +44,7 @@ public class ScheduleServer {
     private String nextRunStartTime;
 
     private String nextRunEndTime;
-    /** 配置中心的当前时间 */
+    /** zk服务器的当前时间 */
     private Timestamp centerServerTime;
 
     /** 数据版本号 */

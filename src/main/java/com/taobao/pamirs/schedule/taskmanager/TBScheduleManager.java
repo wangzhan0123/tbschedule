@@ -448,16 +448,16 @@ abstract class TBScheduleManager implements IStrategyTask {
 
 class HeartBeatTimerTask extends java.util.TimerTask {
     private static transient Logger log = LoggerFactory.getLogger(HeartBeatTimerTask.class);
-    TBScheduleManager manager;
+    TBScheduleManager scheduleManager;
 
     public HeartBeatTimerTask(TBScheduleManager aManager) {
-        manager = aManager;
+        scheduleManager = aManager;
     }
 
     public void run() {
         try {
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            manager.refreshScheduleServerInfo();
+            scheduleManager.refreshScheduleServerInfo();
         } catch (Exception ex) {
             log.error("HeartBeatTimerTask出现异常", ex);
         }
