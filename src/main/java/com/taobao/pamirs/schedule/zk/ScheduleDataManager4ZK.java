@@ -45,9 +45,9 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         Stat tempStat = this.zkManager.getZooKeeper().exists(tempPath, false);
         zkBaseTime = tempStat.getCtime();
         ZKTools.deleteTree(getZooKeeper(), tempPath);
-        if (Math.abs(this.zkBaseTime - this.loclaBaseTime) > 5000) {
-            logger.error("请注意，Zookeeper服务器时间(" + DateTimeUtil.toDateTimeString(zkBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")与本地应用程序服务器时间(" + DateTimeUtil.toDateTimeString(loclaBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
-        }
+        //if (Math.abs(this.zkBaseTime - this.loclaBaseTime) > 5000) {
+            logger.error("Zookeeper服务器时间(" + DateTimeUtil.toDateTimeString(zkBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")与本地应用程序服务器时间(" + DateTimeUtil.toDateTimeString(loclaBaseTime, "yyyy-MM-dd HH:mm:ss.SSS") + ")相差 ： " + Math.abs(this.zkBaseTime - this.loclaBaseTime) + " ms");
+        //}
     }
 
     public ZooKeeper getZooKeeper() throws Exception {
@@ -740,12 +740,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
     public void assignTaskItem(String taskType, String currentUuid, int maxNumOfOneServer, List<String> serverList) throws Exception {
         if (this.isLeader(currentUuid, serverList) == false) {
             if (logger.isDebugEnabled()) {
-                logger.debug(currentUuid + ":不是负责任务分配的Leader,直接返回");
+                logger.debug(currentUuid + ":不是负责任务项分配的Leader,直接返回");
             }
             return;
         }
         if (logger.isDebugEnabled()) {
-            logger.debug(currentUuid + ":开始重新分配任务......");
+            logger.debug(currentUuid + ":开始重新分配任务项......");
         }
         if (serverList.size() <= 0) {
             //在服务器动态调整的时候，可能出现服务器列表为空的清空

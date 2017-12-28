@@ -50,6 +50,10 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
 
     StatisticsInfo statisticsInfo;
 
+    /** lzc add 2017.12.28 为每个线程增加一个唯一ID号 */
+    private static int threadUuid;
+
+
     /**
      * 创建一个调度处理器
      * @param aManager
@@ -78,6 +82,32 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
         }
     }
 
+
+    /** lzc add 2017.12.28 为每个线程增加一个唯一ID号threadUuid */
+    private void startThread(int index) {
+        Thread thread = new Thread(this);
+        threadList.add(thread);
+        String threadName = this.scheduleManager.getScheduleServer().getTaskType() + "-"
+                + this.scheduleManager.getThreadGroupNumber() + "-exe"
+                + index+"-"+serialThreadUuid();
+        thread.setName(threadName);
+        thread.start();
+    }
+
+    private static synchronized int serialThreadUuid() {
+        threadUuid++;
+        if(threadUuid>1000){
+            threadUuid=0;
+        }
+        return threadUuid;
+    }
+
+    public synchronized Object getScheduleTaskId() {
+        if (this.taskList.size() > 0)
+            return this.taskList.remove(0);  // 按正序处理
+        return null;
+    }
+
     /**
      * 需要注意的是，调度服务器从配置中心注销的工作，必须在所有线程退出的情况下才能做
      * @throws Exception
@@ -87,22 +117,6 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
         this.isStopSchedule = true;
         //清除所有未处理任务,但已经进入处理队列的，需要处理完毕
         this.taskList.clear();
-    }
-
-    private void startThread(int index) {
-        Thread thread = new Thread(this);
-        threadList.add(thread);
-        String threadName = this.scheduleManager.getScheduleServer().getTaskType() + "-"
-                + this.scheduleManager.getThreadGroupNumber() + "-exe"
-                + index;
-        thread.setName(threadName);
-        thread.start();
-    }
-
-    public synchronized Object getScheduleTaskId() {
-        if (this.taskList.size() > 0)
-            return this.taskList.remove(0);  // 按正序处理
-        return null;
     }
 
     public synchronized Object[] getScheduleTaskIdMulti() {
@@ -195,7 +209,8 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                         synchronized (this.threadList) {
                             this.threadList.remove(Thread.currentThread());
                             if (this.threadList.size() == 0) {
-                                this.scheduleManager.unRegisterScheduleServer();
+                                //this.scheduleManager.unRegisterScheduleServer();
+                                this.scheduleManager.unRegisterProcessor();
                             }
                         }
                         return;
