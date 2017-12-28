@@ -56,7 +56,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      * key:任务名称strategyName
      * value:当前机器参与执行的线程组管理器集合TBScheduleManager List<IStrategyTask> 备注：IStrategyTask的具体实现类是 TBScheduleManager
      */
-    private Map<String, List<IStrategyTask>> managerMap = new ConcurrentHashMap<String, List<IStrategyTask>>();
+    private Map<String, List<IStrategyTask>> scheduleManagerMap = new ConcurrentHashMap<String, List<IStrategyTask>>();
 
     private ApplicationContext applicationcontext;
     private String uuid;
@@ -84,7 +84,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     }
 
     public void reInit(Properties p) throws Exception {
-        if (this.start == true || this.timer != null || this.managerMap.size() > 0) {
+        if (this.start == true || this.timer != null || this.scheduleManagerMap.size() > 0) {
             throw new Exception("调度器有任务处理，不能重新初始化");
         }
         this.init(p);
@@ -293,15 +293,15 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         List<ScheduleStrategyRunntime> scheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
 
         for (ScheduleStrategyRunntime run : scheduleStrategyRunntimeList) {
-            List<IStrategyTask> list = this.managerMap.get(run.getStrategyName());
+            List<IStrategyTask> list = this.scheduleManagerMap.get(run.getStrategyName());
             if (list == null) {
                 list = new ArrayList<IStrategyTask>();
-                this.managerMap.put(run.getStrategyName(), list);
+                this.scheduleManagerMap.put(run.getStrategyName(), list);
             }
             while (list.size() > run.getRequestNum() && list.size() > 0) {
-                IStrategyTask task = list.remove(list.size() - 1);
+                IStrategyTask scheduleManager = list.remove(list.size() - 1);
                 try {
-                    task.stop(run.getStrategyName());
+                    scheduleManager.stop(run.getStrategyName());
                 } catch (Throwable e) {
                     logger.error("注销任务错误：strategyName=" + run.getStrategyName(), e);
                 }
@@ -328,19 +328,19 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      */
     public void stopServer(String strategyName) throws Exception {
         if (strategyName == null) {
-            String[] nameList = (String[]) this.managerMap.keySet().toArray(new String[0]);
-            for (String name : nameList) {
-                for (IStrategyTask task : this.managerMap.get(name)) {
+            String[] stragegyNameList = (String[]) this.scheduleManagerMap.keySet().toArray(new String[0]);
+            for (String name : stragegyNameList) {
+                for (IStrategyTask scheduleManager : this.scheduleManagerMap.get(name)) {
                     try {
-                        task.stop(strategyName);
+                        scheduleManager.stop(strategyName);
                     } catch (Throwable e) {
                         logger.error("注销任务错误：strategyName=" + strategyName, e);
                     }
                 }
-                this.managerMap.remove(name);
+                this.scheduleManagerMap.remove(name);
             }
         } else {
-            List<IStrategyTask> list = this.managerMap.get(strategyName);
+            List<IStrategyTask> list = this.scheduleManagerMap.get(strategyName);
             if (list != null) {
                 for (IStrategyTask task : list) {
                     try {
@@ -349,7 +349,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                         logger.error("注销任务错误：strategyName=" + strategyName, e);
                     }
                 }
-                this.managerMap.remove(strategyName);
+                this.scheduleManagerMap.remove(strategyName);
             }
 
         }

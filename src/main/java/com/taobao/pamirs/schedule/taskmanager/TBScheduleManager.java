@@ -469,13 +469,13 @@ class PauseOrResumeScheduleTask extends java.util.TimerTask {
             .getLogger(HeartBeatTimerTask.class);
     public static int TYPE_PAUSE = 1;
     public static int TYPE_RESUME = 2;
-    TBScheduleManager manager;
+    TBScheduleManager scheduleManager;
     Timer timer;
     int type;
     String cronTabExpress;
 
     public PauseOrResumeScheduleTask(TBScheduleManager aManager, Timer aTimer, int aType, String aCronTabExpress) {
-        this.manager = aManager;
+        this.scheduleManager = aManager;
         this.timer = aTimer;
         this.type = aType;
         this.cronTabExpress = aCronTabExpress;
@@ -489,13 +489,13 @@ class PauseOrResumeScheduleTask extends java.util.TimerTask {
             CronExpression cexp = new CronExpression(this.cronTabExpress);
             Date nextTime = cexp.getNextValidTimeAfter(current);
             if (this.type == TYPE_PAUSE) {
-                manager.pause("到达终止时间,pause调度");
-                this.manager.getScheduleServer().setNextRunEndTime(ScheduleUtil.transferDataToString(nextTime));
+                scheduleManager.pause("到达终止时间,pause调度");
+                this.scheduleManager.getScheduleServer().setNextRunEndTime(ScheduleUtil.transferDataToString(nextTime));
             } else {
-                manager.resume("到达开始时间,resume调度");
-                this.manager.getScheduleServer().setNextRunStartTime(ScheduleUtil.transferDataToString(nextTime));
+                scheduleManager.resume("到达开始时间,resume调度");
+                this.scheduleManager.getScheduleServer().setNextRunStartTime(ScheduleUtil.transferDataToString(nextTime));
             }
-            this.timer.schedule(new PauseOrResumeScheduleTask(this.manager, this.timer, this.type, this.cronTabExpress), nextTime);
+            this.timer.schedule(new PauseOrResumeScheduleTask(this.scheduleManager, this.timer, this.type, this.cronTabExpress), nextTime);
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
         }

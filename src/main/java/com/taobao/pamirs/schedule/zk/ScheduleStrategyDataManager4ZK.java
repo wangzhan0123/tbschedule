@@ -201,8 +201,8 @@ public class ScheduleStrategyDataManager4ZK {
      * @throws Exception
      */
     public void unRregisterManagerFactory(TBScheduleManagerFactory managerFactory) throws Exception {
-        for (String taskName : this.getZooKeeper().getChildren(this.PATH_Strategy, false)) {
-            String zkPath = this.PATH_Strategy + "/" + taskName + "/" + managerFactory.getUuid();
+        for (String strategyName : this.getZooKeeper().getChildren(this.PATH_Strategy, false)) {
+            String zkPath = this.PATH_Strategy + "/" + strategyName + "/" + managerFactory.getUuid();
             if (this.getZooKeeper().exists(zkPath, false) != null) {
                 ZKTools.deleteTree(this.getZooKeeper(), zkPath);
             }
