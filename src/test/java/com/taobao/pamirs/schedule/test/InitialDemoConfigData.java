@@ -32,7 +32,7 @@ public class InitialDemoConfigData extends UnitilsJUnit4 {
         scheduleManagerFactory.stopServer(null);
         Thread.sleep(1000);
         try {
-            this.scheduleManagerFactory.getScheduleTaskManager()
+            this.scheduleManagerFactory.getScheduleDataManager()
                     .deleteTaskType(baseTaskTypeName);
         } catch (Exception e) {
 
@@ -48,7 +48,7 @@ public class InitialDemoConfigData extends UnitilsJUnit4 {
                 "0:{TYPE=A,KIND=1},1:{TYPE=A,KIND=2},2:{TYPE=A,KIND=3},3:{TYPE=A,KIND=4}," +
                         "4:{TYPE=A,KIND=5},5:{TYPE=A,KIND=6},6:{TYPE=A,KIND=7},7:{TYPE=A,KIND=8}," +
                         "8:{TYPE=A,KIND=9},9:{TYPE=A,KIND=10}"));
-        this.scheduleManagerFactory.getScheduleTaskManager()
+        this.scheduleManagerFactory.getScheduleDataManager()
                 .createBaseTaskType(baseTaskType);
         log.info("创建调度任务成功:" + baseTaskType.toString());
 

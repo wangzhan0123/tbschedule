@@ -116,7 +116,7 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     TBScheduleManager(TBScheduleManagerFactory factory, String baseTaskType, String ownSign, IScheduleDataManager scheduleTaskManager) throws Exception {
         this.factory = factory;
-        this.threadGroupNumber = serialNumber();
+        this.threadGroupNumber = serialThreadGroupNumber();
         this.scheduleTaskManager = scheduleTaskManager;
         this.taskTypeInfo = this.scheduleTaskManager.loadTaskTypeBaseInfo(baseTaskType);
         logger.info("create TBScheduleManager for taskType:" + baseTaskType);
@@ -141,7 +141,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.scheduleServer = ScheduleServer.createScheduleServer(this.scheduleTaskManager, baseTaskType, ownSign, this.taskTypeInfo.getThreadNumber());
         this.scheduleServer.setManagerFactoryUUID(this.factory.getUuid()); //给currenScheduleServer追加赋值 factoryUuid
         this.scheduleTaskManager.registerScheduleServer(this.scheduleServer);
-//        this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
+        //this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeatTimer");
         this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
         initial();
@@ -170,7 +170,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         //没有实现的方法，需要的参数直接从任务配置中读取
     }
 
-    private static synchronized int serialNumber() {
+    private static synchronized int serialThreadGroupNumber() {
         return nextSerialNumber++;
     }
 
@@ -451,8 +451,8 @@ class HeartBeatTimerTask extends java.util.TimerTask {
     private static transient Logger log = LoggerFactory.getLogger(HeartBeatTimerTask.class);
     TBScheduleManager scheduleManager;
 
-    public HeartBeatTimerTask(TBScheduleManager aManager) {
-        scheduleManager = aManager;
+    public HeartBeatTimerTask(TBScheduleManager scheduleManager) {
+        this.scheduleManager = scheduleManager;
     }
 
     public void run() {

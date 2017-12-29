@@ -49,7 +49,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     /**
      * 调度配置中心客户端
      */
-    private IScheduleDataManager scheduleTaskManager;
+    private IScheduleDataManager scheduleDataManager;
     private ScheduleStrategyDataManager4ZK scheduleStrategyManager;
 
     /**
@@ -96,7 +96,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         }
         this.lock.lock();
         try {
-            this.scheduleTaskManager = null;
+            this.scheduleDataManager = null;
             this.scheduleStrategyManager = null;
             ConsoleManager.setScheduleManagerFactory(this);
             if (this.zkManager != null) {
@@ -119,7 +119,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
      */
     public void initialData() throws Exception {
         this.zkManager.initial(); //保证$rootpath存在，没有则创建
-        this.scheduleTaskManager = new ScheduleDataManager4ZK(this.zkManager); //保证$rootpath/baseTaskType存在，没有则创建 ，并记录zk服务器上的时间zkBaseTime
+        this.scheduleDataManager = new ScheduleDataManager4ZK(this.zkManager); //保证$rootpath/baseTaskType存在，没有则创建 ，并记录zk服务器上的时间zkBaseTime
         this.scheduleStrategyManager = new ScheduleStrategyDataManager4ZK(this.zkManager);  //保证$rootpath/strategy, $rootpath/factory 存在，没有则创建
         if (this.start == true) {
             // 注册调度管理器
@@ -150,7 +150,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                 String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(strategy.getTaskName());
                 //ownSign默认值"BASE"
                 String ownSign = ScheduleUtil.splitOwnsignFromTaskType(strategy.getTaskName());
-                result = new TBScheduleManagerStatic(this, baseTaskType, ownSign, scheduleTaskManager);
+                result = new TBScheduleManagerStatic(this, baseTaskType, ownSign, scheduleDataManager);
             } else if (Kind.Java == strategy.getKind()) {
                 result = (IStrategyTask) Class.forName(strategy.getTaskName()).newInstance();
                 result.initialTaskParameter(strategy.getStrategyName(), strategy.getTaskParameter());
@@ -293,6 +293,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         List<ScheduleStrategyRunntime> scheduleStrategyRunntimeList = this.scheduleStrategyManager.loadAllScheduleStrategyRunntimeByUUID(this.uuid);
 
         for (ScheduleStrategyRunntime run : scheduleStrategyRunntimeList) {
+            // IStrategyTask的实现类之一TBScheduleManagerStatic类型
             List<IStrategyTask> list = this.scheduleManagerMap.get(run.getStrategyName());
             if (list == null) {
                 list = new ArrayList<IStrategyTask>();
@@ -430,11 +431,11 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
 
     }
 
-    public IScheduleDataManager getScheduleTaskManager() {
-        if (this.scheduleTaskManager == null) {
+    public IScheduleDataManager getScheduleDataManager() {
+        if (this.scheduleDataManager == null) {
             throw new RuntimeException(this.errorMessage);
         }
-        return scheduleTaskManager;
+        return scheduleDataManager;
     }
 
     public ScheduleStrategyDataManager4ZK getScheduleStrategyManager() {

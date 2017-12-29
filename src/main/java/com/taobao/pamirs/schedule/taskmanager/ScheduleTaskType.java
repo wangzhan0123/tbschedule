@@ -39,7 +39,7 @@ public class ScheduleTaskType implements java.io.Serializable {
     //单线程组的线程数量
     private int threadNumber = 5;
 
-    //调度器类型
+    //调度器类型 取值枚举有：SLEEP,NOTSLEEP
     private String processorType = "SLEEP";
 
     //允许执行的开始时间(Quartz表达式规则)
@@ -80,7 +80,7 @@ public class ScheduleTaskType implements java.io.Serializable {
     public static String STS_RESUME = "resume";
 
 
-//    "0:{TYPE=A,KIND=1},1:{TYPE=A,KIND=2},2:{TYPE=A,KIND=3},3:{TYPE=A,KIND=4}," +
+    //    "0:{TYPE=A,KIND=1},1:{TYPE=A,KIND=2},2:{TYPE=A,KIND=3},3:{TYPE=A,KIND=4}," +
 //    "4:{TYPE=A,KIND=5},5:{TYPE=A,KIND=6},6:{TYPE=A,KIND=7},7:{TYPE=A,KIND=8}," +
 //    "8:{TYPE=A,KIND=9},9:{TYPE=A,KIND=10}"
     public static String[] splitTaskItem(String str) {

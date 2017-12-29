@@ -89,15 +89,15 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
         threadList.add(thread);
         String threadName = this.scheduleManager.getScheduleServer().getTaskType() + "-"
                 + this.scheduleManager.getThreadGroupNumber() + "-exe"
-                + index+"-"+serialThreadUuid();
+                + index + "-" + serialThreadUuid();
         thread.setName(threadName);
         thread.start();
     }
 
     private static synchronized int serialThreadUuid() {
         threadUuid++;
-        if(threadUuid>1000){
-            threadUuid=0;
+        if (threadUuid > 1000) {
+            threadUuid = 0;
         }
         return threadUuid;
     }
@@ -209,6 +209,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                         synchronized (this.threadList) {
                             this.threadList.remove(Thread.currentThread());
                             if (this.threadList.size() == 0) {
+                                //lzc modified 20171229 之前unRegisterScheduleServer这个方法存在并发风险，某些场景下会造成销毁掉线程组
 //                                this.scheduleManager.unRegisterScheduleServer();
                                 this.scheduleManager.unRegisterProcessor();
                             }
@@ -281,15 +282,17 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                         //判断当没有数据的时候，是否需要退出调度
                         //这个方法this.scheduleManager.isContinueWhenData()中当条件满足的时候会退出调度
                         if (this.isStopSchedule == false && this.scheduleManager.isContinueWhenData() == true) {
+
+                            int sleepTimeNoData = this.scheduleManager.getTaskTypeInfo().getSleepTimeNoData();
                             if (logger.isTraceEnabled()) {
-                                logger.trace("没有装载到数据，start sleep");
+                                logger.trace("没有装载到数据，休眠"+sleepTimeNoData+"ms");
                             }
                             this.isSleeping = true;
-                            Thread.currentThread().sleep(this.scheduleManager.getTaskTypeInfo().getSleepTimeNoData());
+                            Thread.currentThread().sleep(sleepTimeNoData);
                             this.isSleeping = false;
 
                             if (logger.isTraceEnabled()) {
-                                logger.trace("Sleep end");
+                                logger.trace("没有装载到数据，休眠结束");
                             }
                         } else {
                             //没有数据，退出调度，唤醒所有沉睡线程

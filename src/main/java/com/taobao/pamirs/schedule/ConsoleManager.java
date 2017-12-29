@@ -58,7 +58,7 @@ public class ConsoleManager {
         if (isInitial() == false) {
             initial();
         }
-        return scheduleManagerFactory.getScheduleTaskManager();
+        return scheduleManagerFactory.getScheduleDataManager();
     }
 
     public static ScheduleStrategyDataManager4ZK getScheduleStrategyManager() throws Exception {
