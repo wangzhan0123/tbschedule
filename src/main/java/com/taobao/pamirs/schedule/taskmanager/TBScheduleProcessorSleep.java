@@ -209,7 +209,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
                         synchronized (this.threadList) {
                             this.threadList.remove(Thread.currentThread());
                             if (this.threadList.size() == 0) {
-                                //this.scheduleManager.unRegisterScheduleServer();
+//                                this.scheduleManager.unRegisterScheduleServer();
                                 this.scheduleManager.unRegisterProcessor();
                             }
                         }

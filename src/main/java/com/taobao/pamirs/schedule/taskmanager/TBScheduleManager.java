@@ -372,6 +372,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         if (logger.isInfoEnabled()) {
             logger.info("停止服务器 ：" + this.scheduleServer.getUuid());
         }
+        //TODO:
         this.isPauseSchedule = false; //不是暂停，是停止 heartBeatTimer
         if (this.processor != null) {
             this.processor.stopSchedule();
