@@ -481,7 +481,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
 
-        logger.debug("当前任务taskType=" + taskType + ",当前线程组serverUuid=" + serverUuid + " ,正在加载任务项");
+        logger.debug("当前线程组serverUuid=" + serverUuid + " ,正在加载任务项");
         List<TaskItemDefine> result = new ArrayList<TaskItemDefine>();
         for (String taskItem : taskItems) {
             byte[] value = this.getZooKeeper().getData(zkPath + "/" + taskItem + "/cur_server", false, null);
@@ -913,7 +913,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         //这里heartBeatTime取的是zk服务器上当前的时间
         server.setHeartBeatTime(heartBeatTime);
 
-        logger.debug("创建scheduleServer:" + gson.toJson(server));
+        logger.debug("创建线程组:" + gson.toJson(server));
         String valueString = this.gson.toJson(server);
         this.getZooKeeper().setData(realPath, valueString.getBytes(), -1);
 
@@ -957,7 +957,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
         String baseTaskType = ScheduleUtil.splitBaseTaskTypeFromTaskType(taskType);
         String zkPath = this.PATH_BaseTaskType + "/" + baseTaskType + "/" + taskType + "/" + this.PATH_Server + "/" + serverUUID;
         if (this.getZooKeeper().exists(zkPath, false) != null) {
-            logger.info("删除线程组.zkPath=" + zkPath);
+            logger.info("删除线程组(第3步)：" + serverUUID);
             this.getZooKeeper().delete(zkPath, -1);
         }
     }

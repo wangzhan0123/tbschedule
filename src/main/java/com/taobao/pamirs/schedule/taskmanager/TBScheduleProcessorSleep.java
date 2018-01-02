@@ -96,7 +96,7 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
 
     private static synchronized int serialThreadUuid() {
         threadUuid++;
-        if (threadUuid > 1000) {
+        if (threadUuid > 10000) {
             threadUuid = 0;
         }
         return threadUuid;

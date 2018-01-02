@@ -147,8 +147,7 @@ public class ScheduleTaskItem {
     @Override
     public String toString() {
         return "ScheduleTaskItem{" +
-                "baseTaskType='" + baseTaskType + '\'' +
-                ", taskType='" + taskType + '\'' +
+                "  taskType='" + taskType + '\'' +
                 ", ownSign='" + ownSign + '\'' +
                 ", taskItem='" + taskItem + '\'' +
                 ", dealParameter='" + dealParameter + '\'' +

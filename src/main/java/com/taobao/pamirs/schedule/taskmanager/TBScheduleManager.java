@@ -370,7 +370,7 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     public void stop(String strategyName) throws Exception {
         if (logger.isInfoEnabled()) {
-            logger.info("停止服务器 ：" + this.scheduleServer.getUuid());
+            logger.info("停止线程组(第1步)：" + this.scheduleServer.getUuid());
         }
         //TODO:
         this.isPauseSchedule = false; //不是暂停，是停止 heartBeatTimer
@@ -382,7 +382,9 @@ abstract class TBScheduleManager implements IStrategyTask {
     }
 
     /**
-     * 支持处理 暂停<isPauseSchedule> 与 注销<isStopSchedule> 2种情况
+     * lzc modified 2018.1.2
+     * 该方法支持处理 暂停<isPauseSchedule> 与 注销<isStopSchedule> 2种情况，存在多线程的问题，已改成仅注销<isStopSchedule> 时才调用这个方法
+     * 暂停<isPauseSchedule> 时调用新增的方法unRegisterProcessor
      *
      * 只应该在Processor中调用
      * @throws Exception
@@ -393,12 +395,12 @@ abstract class TBScheduleManager implements IStrategyTask {
             if (this.processor != null) {
                 this.processor = null;
             }
-            if (this.isPauseSchedule == true) {
-                // 是暂停调度，不注销Manager自己
-                return;
-            }
+            //if (this.isPauseSchedule == true) {
+            //    // 是暂停调度，不注销Manager自己
+            //    return;
+            //}
             if (logger.isDebugEnabled()) {
-                logger.debug("注销服务器 ：" + this.scheduleServer.getUuid());
+                logger.debug("注销线程组(第2步)：" + this.scheduleServer.getUuid());
             }
             this.isStopSchedule = true;
             // 取消心跳TIMER

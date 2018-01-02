@@ -226,13 +226,13 @@ public class ScheduleStrategyDataManager4ZK {
                 String valueString = new String(value);
                 result = (ScheduleStrategyRunntime) this.gson.fromJson(valueString, ScheduleStrategyRunntime.class);
                 if (null == result) {
-                    throw new Exception("gson 反序列化异常,对象为null");
+                    throw new Exception("gson 反序列化(ScheduleStrategyRunntime)异常,对象为null");
                 }
                 if (null == result.getStrategyName()) {
-                    throw new Exception("gson 反序列化异常,策略名字为null");
+                    throw new Exception("gson 反序列化(ScheduleStrategyRunntime)异常,策略名字为null");
                 }
                 if (null == result.getUuid()) {
-                    throw new Exception("gson 反序列化异常,uuid为null");
+                    throw new Exception("gson 反序列化(ScheduleStrategyRunntime)异常,uuid为null");
                 }
             } else {
                 //这个节点如果是这次创建的，getData就会是null的
@@ -375,7 +375,7 @@ public class ScheduleStrategyDataManager4ZK {
     public void updateManagerFactoryInfo(String uuid, boolean isStart) throws Exception {
         String zkPath = this.PATH_Factory + "/" + uuid;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
-            throw new Exception("任务管理器不存在:" + uuid);
+            throw new Exception("任务服务器不存在:" + uuid);
         }
         this.getZooKeeper().setData(zkPath, Boolean.toString(isStart).getBytes(), -1);
     }
@@ -390,7 +390,7 @@ public class ScheduleStrategyDataManager4ZK {
     public ManagerFactoryInfo loadManagerFactoryInfo(String uuid) throws Exception {
         String zkPath = this.PATH_Factory + "/" + uuid;
         if (this.getZooKeeper().exists(zkPath, false) == null) {
-            throw new Exception("任务管理器不存在:" + uuid);
+            throw new Exception("任务服务器不存在:" + uuid);
         }
         byte[] value = this.getZooKeeper().getData(zkPath, false, null);
         ManagerFactoryInfo result = new ManagerFactoryInfo();

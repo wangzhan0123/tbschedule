@@ -307,7 +307,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
                     logger.error("注销任务错误：strategyName=" + run.getStrategyName(), e);
                 }
             }
-            //不足，增加调度器
+            //不足，增加调度器(代码能够执行到这里的，表明strategy肯定是resume状态的)
             ScheduleStrategy strategy = this.scheduleStrategyManager.loadStrategy(run.getStrategyName());
             // requestNumr=0(Leader尚未给其分配任务项 或 Leader 分配时发现不需要这台机器来处理)时,下面where直接结束,等待下一个2秒 再次factory.refresh()
             // requestNumr=1(Leader 分配了1个任务项给这台机器来处理)时,将执行 this.createStrategyTask(strategy);

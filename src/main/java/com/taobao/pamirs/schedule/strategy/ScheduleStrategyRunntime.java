@@ -16,8 +16,8 @@ public class ScheduleStrategyRunntime {
 
     private String taskParameter;
 
-    //TODO:建议更名为 taskItemNum
-    /** uuid机器参与执行strategyName任务 被分配的任务项数量  */
+    //TODO:建议更名为 assignNum
+    /** uuid机器参与执行strategyName任务 被分配的线程组数量 */
     int requestNum;
 
     /** 当前的任务数量 */
@@ -101,7 +101,7 @@ public class ScheduleStrategyRunntime {
     public String toString() {
         return "ScheduleStrategyRunntime [strategyName=" + strategyName
                 + ", uuid=" + uuid + ", ip=" + ip + ", kind=" + kind
-                +  ", taskParameter=" + taskParameter
+                + ", taskParameter=" + taskParameter
                 + ", requestNum=" + requestNum + ", currentNum=" + currentNum
                 + ", message=" + message + "]";
     }

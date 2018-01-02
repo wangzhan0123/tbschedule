@@ -1,5 +1,6 @@
 package com.taobao.pamirs.schedule.taskmanager;
 
+import com.taobao.pamirs.schedule.DateTimeUtil;
 import com.taobao.pamirs.schedule.TaskItemDefine;
 import com.taobao.pamirs.schedule.strategy.TBScheduleManagerFactory;
 import org.apache.zookeeper.data.Stat;
@@ -273,19 +274,18 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
             this.currentTaskItemList.clear();
             this.currentTaskItemList = this.scheduleTaskManager.reloadDealTaskItem(  this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());
 
-            //如果超过10个心跳周期还没有获取到调度队列，则报警
-            if (this.currentTaskItemList.size() == 0 &&
-                    scheduleTaskManager.getSystemTime() - this.lastReloadTaskItemListTime
-                            > this.taskTypeInfo.getHeartBeatRate() * 20) {
+            //如果超过20个心跳周期还没有获取到调度队列，则报警
+            long cycle= ( scheduleTaskManager.getSystemTime() - this.lastReloadTaskItemListTime)/this.taskTypeInfo.getHeartBeatRate();
+            if (this.currentTaskItemList.size() == 0 &&  cycle  >  20) {
                 StringBuffer buf = new StringBuffer();
-                buf.append("调度服务器");
+                buf.append("线程组");
                 buf.append("[");
                 buf.append(this.scheduleServer.toString());
-                buf.append("]自启动以来，超过20个心跳周期，还没有获取到分配的任务队列;");
+                buf.append("]自启动以来，超过"+cycle+"个心跳周期，还没有获取到任务项;");
                 buf.append("  currentTaskItemList.size() =" + currentTaskItemList.size());
-                buf.append(" ,scheduleTaskManager.getSystemTime()=" + scheduleTaskManager.getSystemTime());
-                buf.append(" ,lastReloadTaskItemListTime=" + lastReloadTaskItemListTime);
-                buf.append(" ,taskTypeInfo.getHeartBeatRate()*20=" + taskTypeInfo.getHeartBeatRate() * 20);
+                buf.append(" ,scheduleTaskManager.getSystemTime()=" + DateTimeUtil.toDateTimeString( scheduleTaskManager.getSystemTime(),"yyyy-MM-dd HH:mm:ss.SSS") );
+                buf.append(" ,lastReloadTaskItemListTime=" +  DateTimeUtil.toDateTimeString( lastReloadTaskItemListTime,"yyyy-MM-dd HH:mm:ss.SSS") );
+                buf.append(" ,taskTypeInfo.getHeartBeatRate()=" + taskTypeInfo.getHeartBeatRate());
                 logger.error(buf.toString());
             }
 
