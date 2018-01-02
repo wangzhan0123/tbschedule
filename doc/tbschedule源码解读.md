@@ -7,3 +7,5 @@ tbschedule在Timer,Thread方面的应用
 tbschedule在Spring中的配置参数说明
 
 tbschedule关于选举Leader的几点认识
+    zk服务器之间选举机制，节点间数据同步，如何做到的一致性
+    tbschedule中关于具体一个任务，决定每个应用服务器参与执行几个任务项的Leader如何产生的

@@ -20,3 +20,6 @@
 <mvn.tbSchedule.userName>o2o-message-center</mvn.tbSchedule.userName>
 <mvn.tbSchedule.password>8570b864b5ee43368c208b92f4587a22</mvn.tbSchedule.password>
 <mvn.thSchedule.isCheckParentPath>true</mvn.thSchedule.isCheckParentPath>
+
+
+

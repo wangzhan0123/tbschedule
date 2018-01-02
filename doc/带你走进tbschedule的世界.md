@@ -59,3 +59,26 @@ permitRunStartTime没有值，则当本次任务selectTasks()返回条数==0时�
     }
 
 
+<td>任务参数:</td>
+<td><input type="text" id="taskParameter" name="taskParameter" value="<%=scheduleStrategy.getTaskParameter()%>" width="30"></td>
+<td>逗号分隔的Key-Value。 对任务类型为Schedule的无效，需要通过任务管理来配置的</td>
+
+NotSleep和Sleep模式
+NotSleep模式就是一个线程组内的所有线程都可以执行selectTasks方法，但是数据要存储起来，以防止其他线程处理重复，需要重写getComparator方法
+Sleep模式就是一个线程组内的所有线程中只能有一个线程去执行selectTasks方法，然后所有线程去执行execute方法，不需要重写getComparator方法
+
+问题五.任务配置修改了，没反应？
+策略修改会立即生效，任务配置不会生效
+Tbschedule对策略的修改是及时感知的，但是对于任务项的修改则不是，一旦调度分配好任务项开始执行的时候，手动去修改任务项的执行时间，
+增加任务项等等都是没有反应的，除非你手工的去重启调度策略或者重新启动你的服务器。当然也有特殊情况，那就是zookeeper连接超时时导致
+的任务调度重新分配（当然这种情况也不是我们希望的）。
+
+问题4.线程组数不一致
+有时候观察任务项，会发现线程组数超过的配置项，而且程序中也会发现抛出“自启动以来，超过10个心跳周期，还 没有获取到分配的任务队列”
+出现上述问题有很多原因，常见的是服务器重启引起导致zookeeper断开连接，启动之后，zookeeper会重新调度，也就是会重新创造
+出新的线程组，不过一般不用担心，tbschedule会删除无用的节点，只需要等待几秒就好
+
+问题一，任务项没配置
+任务项至少需要1项
+对于许多刚接触这块的同学来说，第一点就是不明白任务项的必要性，没有任务项，线程组分配不到任务，也就不会进入selectTasks方法，
+并且启动worker服务会抛出异常
