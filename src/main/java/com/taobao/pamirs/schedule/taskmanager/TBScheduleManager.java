@@ -372,13 +372,14 @@ abstract class TBScheduleManager implements IStrategyTask {
         if (logger.isInfoEnabled()) {
             logger.info("停止线程组(第1步)：" + this.scheduleServer.getUuid());
         }
-        //TODO:
         this.isPauseSchedule = false; //不是暂停，是停止 heartBeatTimer
         if (this.processor != null) {
             this.processor.stopSchedule();
-        } else {
-            this.unRegisterScheduleServer();
+        //} else {
+        //    this.unRegisterScheduleServer();
         }
+        //既然是停止，保证任何情况下能会触发这个方法
+        this.unRegisterScheduleServer();
     }
 
     /**
@@ -396,7 +397,7 @@ abstract class TBScheduleManager implements IStrategyTask {
                 this.processor = null;
             }
             //if (this.isPauseSchedule == true) {
-            //    // 是暂停调度，不注销Manager自己
+            //    是暂停调度，不注销Manager自己
             //    return;
             //}
             if (logger.isDebugEnabled()) {

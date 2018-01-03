@@ -481,7 +481,6 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             }
         });
 
-        logger.debug("当前线程组serverUuid=" + serverUuid + " ,正在加载任务项");
         List<TaskItemDefine> result = new ArrayList<TaskItemDefine>();
         for (String taskItem : taskItems) {
             byte[] value = this.getZooKeeper().getData(zkPath + "/" + taskItem + "/cur_server", false, null);
@@ -495,11 +494,12 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
                 result.add(item);
 
             } else if (value != null && serverUuid.equals(new String(value)) == false) {
-                logger.trace(" current uid=" + serverUuid + " , zk cur_server uid=" + new String(value));
+                logger.trace("current uid=" + serverUuid + " , zk cur_server uid=" + new String(value));
             } else {
-                logger.trace(" current uid=" + serverUuid);
+                logger.trace("current uid=" + serverUuid);
             }
         }
+        logger.debug("当前线程组serverUuid=" + serverUuid + " ,正在加载任务项result="+result);
         return result;
     }
 
@@ -578,7 +578,7 @@ public class ScheduleDataManager4ZK implements IScheduleDataManager {
             try {
                 Stat stat = this.getZooKeeper().exists(zkPath + "/" + scheduleServer, false);
                 if (getSystemTime() - stat.getMtime() > expireTime) {
-                    logger.info("清除过期的scheduleServer=" + zkPath + "/" + scheduleServer);
+                    logger.info("清除过期线程组scheduleServer=" + zkPath + "/" + scheduleServer);
                     ZKTools.deleteTree(this.getZooKeeper(), zkPath + "/" + scheduleServer);
                     result++;
                 }

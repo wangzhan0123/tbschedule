@@ -42,7 +42,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         List<String> serverList = scheduleTaskManager.loadScheduleServerNames(this.scheduleServer.getTaskType());
         if (scheduleTaskManager.isLeader(this.scheduleServer.getUuid(), serverList)) {
             //是第一次启动，Leader先清除所有的垃圾数据
-            logger.debug("程序第一次启动，Leader（"+this.scheduleServer.getUuid()+"）先清除taskItem目录,再重新创建");
+            logger.debug("程序第一次启动，线程组Leader（"+this.scheduleServer.getUuid()+"）先清除taskItem目录,再重新创建");
             this.scheduleTaskManager.initialRunningInfo4Static(this.scheduleServer.getBaseTaskType(), this.scheduleServer.getOwnSign(), this.scheduleServer.getUuid());
         }
     }
@@ -264,7 +264,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         }
         //记录最新的版本号(取的是$rootPath/baseTaskType/$baseTaskType/$taskType/server节点的stat.version信息)
         this.lastFetchVersion = this.scheduleTaskManager.getReloadTaskItemFlag(this.scheduleServer.getTaskType());
-        logger.debug(" this.scheduleServer.getTaskType()=" + this.scheduleServer.getTaskType() + ",isNeedReloadTaskItem=" + isNeedReloadTaskItem);
+        logger.debug("scheduleServer.getUuid()=" + scheduleServer.getUuid() + ",lastFetchVersion=" + lastFetchVersion);
         try {
             //是否被人申请的队列
             this.scheduleTaskManager.releaseDealTaskItem(this.scheduleServer.getTaskType(), this.scheduleServer.getUuid());

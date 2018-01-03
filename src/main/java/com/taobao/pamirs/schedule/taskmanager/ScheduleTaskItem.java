@@ -43,6 +43,7 @@ public class ScheduleTaskItem {
 
     /**
      * 任务处理情况,用于任务处理器会写一些信息
+     * //TODO:目前来看没有用到
      */
     private String dealDesc = "";
 
@@ -147,15 +148,12 @@ public class ScheduleTaskItem {
     @Override
     public String toString() {
         return "ScheduleTaskItem{" +
-                "  taskType='" + taskType + '\'' +
+                "taskType='" + taskType + '\'' +
                 ", ownSign='" + ownSign + '\'' +
                 ", taskItem='" + taskItem + '\'' +
-                ", dealParameter='" + dealParameter + '\'' +
+                //", dealParameter='" + dealParameter + '\'' +
                 ", currentScheduleServer='" + currentScheduleServer + '\'' +
                 ", requestScheduleServer='" + requestScheduleServer + '\'' +
-                ", dealDesc='" + dealDesc + '\'' +
-                ", version=" + version +
-                ", sts=" + sts +
                 '}';
     }
 }

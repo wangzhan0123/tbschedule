@@ -125,7 +125,7 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
             // 注册调度管理器
             this.scheduleStrategyManager.registerManagerFactory(this);
             if (timer == null) {
-                timer = new Timer("TBScheduleManagerFactory-factorytimer");
+                timer = new Timer("TBScheduleManagerFactory-FactoryTimer");
             }
             if (timerTask == null) {
                 timerTask = new ManagerFactoryTimerTask(this);
@@ -343,9 +343,9 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
         } else {
             List<IStrategyTask> list = this.scheduleManagerMap.get(strategyName);
             if (list != null) {
-                for (IStrategyTask task : list) {
+                for (IStrategyTask scheduleManager : list) {
                     try {
-                        task.stop(strategyName);
+                        scheduleManager.stop(strategyName);
                     } catch (Throwable e) {
                         logger.error("注销任务错误：strategyName=" + strategyName, e);
                     }
