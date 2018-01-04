@@ -117,6 +117,11 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
         this.isStopSchedule = true;
         //清除所有未处理任务,但已经进入处理队列的，需要处理完毕
         this.taskList.clear();
+
+        boolean flag= (scheduleManager.processor==this) ;
+        if(!flag){
+            logger.error("存在多线程的问题scheduleManager.processor="+scheduleManager.processor.getThreadList()+",this="+this.getThreadList());
+        }
     }
 
     public synchronized Object[] getScheduleTaskIdMulti() {
@@ -327,4 +332,9 @@ class TBScheduleProcessorSleep<T> implements IScheduleProcessor, Runnable {
         this.statisticsInfo.addDealDataFail(num);
         this.statisticsInfo.addDealSpendTime(spendTime);
     }
+
+    public List<Thread> getThreadList(){
+        return threadList;
+    }
+
 }

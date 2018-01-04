@@ -1,5 +1,7 @@
 package com.taobao.pamirs.schedule.taskmanager;
 
+import java.util.List;
+
 interface IScheduleProcessor {
     /**
      * 是否已经处理完内存中所有的数据，在进行队列切换的时候，
@@ -24,4 +26,10 @@ interface IScheduleProcessor {
      * 清除所有已经取到内存中的数据，在心跳线程失败的时候调用，避免数据重复
      */
     public void clearAllHasFetchData();
+
+    /**
+     * 获得当前正在参与执行的线程列表
+     * @return
+     */
+    public List<Thread> getThreadList();
 }

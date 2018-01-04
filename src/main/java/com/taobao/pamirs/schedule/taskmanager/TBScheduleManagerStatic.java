@@ -47,7 +47,7 @@ public class TBScheduleManagerStatic extends TBScheduleManager {
         }
     }
     public void initial() throws Exception {
-        new Thread(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-StartProcess") {
+        new Thread(this.scheduleServer.getTaskType() + "-" + this.getThreadGroupNumber() + "-StartProcess") {
             @SuppressWarnings("static-access")
             public void run() {
                 try {

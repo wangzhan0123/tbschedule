@@ -39,26 +39,20 @@ import java.util.concurrent.locks.ReentrantLock;
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract class TBScheduleManager implements IStrategyTask {
     private static transient Logger logger = LoggerFactory.getLogger(TBScheduleManager.class);
-    /**
-     * 用户标识不同线程的序号
-     */
-    private static int nextSerialNumber = 0;
-    /**
-     * 当前线程组编号
-     */
+
+    /** 用户标识不同线程的序号 */
+    private static int threadGroupGlobleNumber = 0;
+
+    /** 当前线程组编号  */
     protected int threadGroupNumber = 0;
 
-    /**
-     * 调度任务类型信息
-     */
+    /** 调度任务类型信息 */
     protected ScheduleTaskType taskTypeInfo;
-    /**
-     * 当前调度服务的信息
-     */
+
+    /** 当前调度服务的信息 */
     protected ScheduleServer scheduleServer;
-    /**
-     * 队列处理器
-     */
+
+    /** 任务处理器 */
     IScheduleTaskDeal taskDealBean;
     /**
      *  当前线程组分配的任务项列表
@@ -66,10 +60,8 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     protected List<TaskItemDefine> currentTaskItemList = new CopyOnWriteArrayList<TaskItemDefine>();
 
-    //    private String mBeanName;
-    /**
-     * 向配置中心更新信息的定时器
-     */
+    //  private String mBeanName;
+    /** 向配置中心更新信息的定时器  */
     private Timer heartBeatTimer;
 
     /**
@@ -116,7 +108,7 @@ abstract class TBScheduleManager implements IStrategyTask {
      */
     TBScheduleManager(TBScheduleManagerFactory factory, String baseTaskType, String ownSign, IScheduleDataManager scheduleTaskManager) throws Exception {
         this.factory = factory;
-        this.threadGroupNumber = serialThreadGroupNumber();
+        this.threadGroupNumber = serialThreadGroupGlobleNumber();
         this.scheduleTaskManager = scheduleTaskManager;
         this.taskTypeInfo = this.scheduleTaskManager.loadTaskTypeBaseInfo(baseTaskType);
         logger.info("create TBScheduleManager for taskType:" + baseTaskType);
@@ -134,7 +126,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.taskDealBean = (IScheduleTaskDeal) dealBean;
 
         if (this.taskTypeInfo.getJudgeDeadInterval() < this.taskTypeInfo.getHeartBeatRate() * 5) {
-            throw new Exception("数据配置["+taskTypeInfo.getBaseTaskType()+"]存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：" +
+            throw new Exception("数据配置[" + taskTypeInfo.getBaseTaskType() + "]存在问题，死亡的时间间隔，至少要大于心跳线程的5倍。当前配置数据：" +
                     "judgeDeadInterval = " + this.taskTypeInfo.getJudgeDeadInterval() +
                     ",heartBeatRate = " + this.taskTypeInfo.getHeartBeatRate());
         }
@@ -143,7 +135,7 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.scheduleTaskManager.registerScheduleServer(this.scheduleServer);
         //this.mBeanName = "pamirs:name=" + "schedu le.ServerMananger." + this.scheduleServer.getUuid();
         this.heartBeatTimer = new Timer(this.scheduleServer.getTaskType() + "-" + this.threadGroupNumber + "-HeartBeatTimer");
-        this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500),this.taskTypeInfo.getHeartBeatRate());
+        this.heartBeatTimer.schedule(new HeartBeatTimerTask(this), new Date(System.currentTimeMillis() + 500), this.taskTypeInfo.getHeartBeatRate());
         initial();
     }
 
@@ -170,12 +162,15 @@ abstract class TBScheduleManager implements IStrategyTask {
         //没有实现的方法，需要的参数直接从任务配置中读取
     }
 
-    private static synchronized int serialThreadGroupNumber() {
-        return nextSerialNumber++;
+    private static int serialThreadGroupGlobleNumber() {
+        //类级别加锁
+        synchronized (TBScheduleManager.class) {
+            return threadGroupGlobleNumber++;
+        }
     }
 
     public int getThreadGroupNumber() {
-        return this.threadGroupNumber;
+        return threadGroupNumber;
     }
 
     /**
@@ -318,7 +313,10 @@ abstract class TBScheduleManager implements IStrategyTask {
     }
 
     /**
-     * 超过运行的运行时间，暂时停止调度
+     * 暂时停止调度
+     *
+     * message可能值： "没有数据,暂停调度" ；"到达终止时间,暂停调度"
+     *
      * @throws Exception
      */
     public void pause(String message) throws Exception {
@@ -340,7 +338,9 @@ abstract class TBScheduleManager implements IStrategyTask {
      * @throws Exception
      */
     public void resume(String message) throws Exception {
-        if (this.isPauseSchedule == true) {
+        //lzc modified 20180104,避免process还没有被销毁就又进入了触发时间重新给赋值了
+        //if (this.isPauseSchedule == true ) {
+        if (this.isPauseSchedule == true && this.processor == null) {
             if (logger.isDebugEnabled()) {
                 logger.debug("恢复调度:" + this.scheduleServer.getUuid());
             }
@@ -375,8 +375,8 @@ abstract class TBScheduleManager implements IStrategyTask {
         this.isPauseSchedule = false; //不是暂停，是停止 heartBeatTimer
         if (this.processor != null) {
             this.processor.stopSchedule();
-        //} else {
-        //    this.unRegisterScheduleServer();
+            //} else {
+            //    this.unRegisterScheduleServer();
         }
         //既然是停止，保证任何情况下能会触发这个方法
         this.unRegisterScheduleServer();
@@ -493,10 +493,10 @@ class PauseOrResumeScheduleTask extends java.util.TimerTask {
             CronExpression cexp = new CronExpression(this.cronTabExpress);
             Date nextTime = cexp.getNextValidTimeAfter(current);
             if (this.type == TYPE_PAUSE) {
-                scheduleManager.pause("到达终止时间,pause调度");
+                scheduleManager.pause("到达终止时间,暂停调度");
                 this.scheduleManager.getScheduleServer().setNextRunEndTime(ScheduleUtil.transferDataToString(nextTime));
             } else {
-                scheduleManager.resume("到达开始时间,resume调度");
+                scheduleManager.resume("到达开始时间,恢复调度");
                 this.scheduleManager.getScheduleServer().setNextRunStartTime(ScheduleUtil.transferDataToString(nextTime));
             }
             this.timer.schedule(new PauseOrResumeScheduleTask(this.scheduleManager, this.timer, this.type, this.cronTabExpress), nextTime);
