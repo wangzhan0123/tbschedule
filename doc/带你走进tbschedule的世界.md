@@ -82,3 +82,28 @@ Tbschedule对策略的修改是及时感知的，但是对于任务项的修改�
 任务项至少需要1项
 对于许多刚接触这块的同学来说，第一点就是不明白任务项的必要性，没有任务项，线程组分配不到任务，也就不会进入selectTasks方法，
 并且启动worker服务会抛出异常
+
+
+
+触发规则配置
+开始时间 不配置
+结束时间 不配置
+启动后立即执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法仅执行多次
+
+开始时间 不配置
+结束时间 配置
+启动后立即执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法仅执行多次
+
+开始时间 配置
+结束时间 不配置
+在开始时间进行执行，当selectTask方法 return null或者 return new ArrayList()时暂停任务，selectTask方法仅执行1次
+
+开始时间 配置
+结束时间 配置
+在开始时间进行执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，直到结束时间到达后暂停
+
+
+
+
+
+
