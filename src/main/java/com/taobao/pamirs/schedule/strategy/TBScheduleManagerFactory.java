@@ -488,6 +488,10 @@ public class TBScheduleManagerFactory implements ApplicationContextAware {
     public Map<String, String> getZkConfig() {
         return zkConfig;
     }
+
+    public Map<String, List<IStrategyTask>> getScheduleManagerMap() {
+        return scheduleManagerMap;
+    }
 }
 
 class ManagerFactoryTimerTask extends java.util.TimerTask {
@@ -521,6 +525,8 @@ class ManagerFactoryTimerTask extends java.util.TimerTask {
             factory.timerTaskHeartBeatTS = System.currentTimeMillis();
         }
     }
+
+
 }
 
 class InitialThread extends Thread {
@@ -560,5 +566,7 @@ class InitialThread extends Thread {
         }
 
     }
+
+
 
 }

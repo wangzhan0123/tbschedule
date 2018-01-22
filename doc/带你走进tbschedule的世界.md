@@ -63,10 +63,6 @@ permitRunStartTime没有值，则当本次任务selectTasks()返回条数==0时�
 <td><input type="text" id="taskParameter" name="taskParameter" value="<%=scheduleStrategy.getTaskParameter()%>" width="30"></td>
 <td>逗号分隔的Key-Value。 对任务类型为Schedule的无效，需要通过任务管理来配置的</td>
 
-NotSleep和Sleep模式
-NotSleep模式就是一个线程组内的所有线程都可以执行selectTasks方法，但是数据要存储起来，以防止其他线程处理重复，需要重写getComparator方法
-Sleep模式就是一个线程组内的所有线程中只能有一个线程去执行selectTasks方法，然后所有线程去执行execute方法，不需要重写getComparator方法
-
 问题五.任务配置修改了，没反应？
 策略修改会立即生效，任务配置不会生效
 Tbschedule对策略的修改是及时感知的，但是对于任务项的修改则不是，一旦调度分配好任务项开始执行的时候，手动去修改任务项的执行时间，
@@ -83,16 +79,15 @@ Tbschedule对策略的修改是及时感知的，但是对于任务项的修改�
 对于许多刚接触这块的同学来说，第一点就是不明白任务项的必要性，没有任务项，线程组分配不到任务，也就不会进入selectTasks方法，
 并且启动worker服务会抛出异常
 
+NotSleep和Sleep模式
+NotSleep模式就是一个线程组内的所有线程都可以执行selectTasks方法，但是数据要存储起来，以防止其他线程处理重复，需要重写getComparator方法
+Sleep模式就是一个线程组内的所有线程中只能有一个线程去执行selectTasks方法，然后所有线程去执行execute方法，不需要重写getComparator方法
 
 
 触发规则配置
 开始时间 不配置
 结束时间 不配置
-启动后立即执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法仅执行多次
-
-开始时间 不配置
-结束时间 配置
-启动后立即执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法仅执行多次
+启动后立即执行，每次都是先休眠sleepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法会执行多次
 
 开始时间 配置
 结束时间 不配置
@@ -102,7 +97,9 @@ Tbschedule对策略的修改是及时感知的，但是对于任务项的修改�
 结束时间 配置
 在开始时间进行执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，直到结束时间到达后暂停
 
-
+开始时间 不配置
+结束时间 配置
+启动后立即执行，每次都是先休眠leepTimeInterval再执行selectTasks方法，会一直按照这个步骤循环下去，selectTask方法仅执行多次
 
 
 
